@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge AI Portfolio Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0a0c10; --bg2:#0f1218; --bg3:#161b24; --border:#1e2530;
+    --accent:#00e5a0; --accent2:#00b3ff; --danger:#ff4d6a; --warn:#ffb84d;
+    --text:#e8ecf0; --muted:#5a6478;
+    --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:24px;
+    background-image:radial-gradient(ellipse at 20% 50%,rgba(0,229,160,.04) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 10%,rgba(0,179,255,.04) 0%,transparent 50%);}
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;
+    padding-bottom:20px;border-bottom:1px solid var(--border);}
+  .logo-area h1{font-family:var(--mono);font-size:12px;letter-spacing:.15em;color:var(--accent);
+    text-transform:uppercase;margin-bottom:4px;}
+  .logo-area p{font-size:11px;color:var(--muted);font-family:var(--mono);}
+  .header-right{display:flex;align-items:center;gap:16px;}
+  #last-updated{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right;line-height:1.5;}
+  .update-btn{font-family:var(--mono);font-size:11px;background:transparent;color:var(--accent);
+    border:1px solid var(--accent);padding:8px 18px;border-radius:2px;cursor:pointer;
+    letter-spacing:.08em;transition:all .2s;position:relative;overflow:hidden;white-space:nowrap;}
+  .update-btn:hover{background:rgba(0,229,160,.08);}
+  .update-btn.loading{color:var(--muted);border-color:var(--muted);pointer-events:none;}
+  .update-btn.loading::after{content:'';position:absolute;left:0;top:0;height:2px;width:0%;
+    background:var(--accent);animation:prog 3s ease forwards;}
+  @keyframes prog{to{width:100%;}}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:18px;
+    position:relative;overflow:hidden;transition:border-color .2s;}
+  .card:hover{border-color:#2a3545;}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .card.core::before{background:var(--accent);}
+  .card.satellite::before{background:var(--accent2);}
+  .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+  .ticker{font-family:var(--mono);font-size:17px;font-weight:700;letter-spacing:.05em;}
+  .company-name{font-size:11px;color:var(--muted);margin-top:2px;}
+  .tier-badge{font-family:var(--mono);font-size:10px;padding:3px 7px;border-radius:2px;
+    letter-spacing:.06em;text-transform:uppercase;}
+  .tier-core{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.2);}
+  .tier-satellite{background:rgba(0,179,255,.1);color:var(--accent2);border:1px solid rgba(0,179,255,.2);}
+  .metrics-row{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:center;margin-bottom:18px;}
+  .alloc-ring{position:relative;width:72px;height:72px;}
+  .alloc-ring svg{transform:rotate(-90deg);}
+  .ring-track{fill:none;stroke:var(--border);stroke-width:5;}
+  .ring-fill{fill:none;stroke-width:5;stroke-linecap:round;}
+  .alloc-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+  .alloc-pct{font-family:var(--mono);font-size:13px;font-weight:700;line-height:1;}
+  .alloc-sub{font-size:9px;color:var(--muted);margin-top:1px;}
+  .current-price{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1;}
+  .price-change{font-family:var(--mono);font-size:12px;margin-top:4px;}
+  .price-meta{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4;}
+  .up{color:var(--accent);} .dn{color:var(--danger);} .neu{color:var(--muted);}
+  .week52{margin-bottom:18px;}
+  .week52-label{display:flex;justify-content:space-between;font-family:var(--mono);
+    font-size:10px;color:var(--muted);margin-bottom:6px;}
+  .week52-track{height:4px;background:var(--border);border-radius:2px;position:relative;}
+  .week52-fill{height:4px;border-radius:2px;position:absolute;left:0;transition:width .6s ease;}
+  .week52-dot{position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;
+    border:2px solid var(--bg2);transform:translateX(-50%);transition:left .6s ease;}
+  .week52-vals{display:flex;justify-content:space-between;font-family:var(--mono);
+    font-size:10px;color:var(--muted);margin-top:6px;}
+  .chart-area{margin-bottom:14px;}
+  .chart-label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+    margin-bottom:6px;font-family:var(--mono);}
+  .sparkline-wrap{position:relative;height:68px;}
+  .sparkline-wrap svg{width:100%;height:100%;overflow:visible;}
+  .status-row{display:flex;justify-content:space-between;align-items:center;
+    padding-top:12px;border-top:1px solid var(--border);}
+  .status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .status-dot.live{background:var(--accent);animation:pulse 2s infinite;}
+  .status-dot.stale{background:var(--warn);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .status-text{font-size:11px;color:var(--muted);flex:1;margin-left:8px;}
+  .source-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:2px;
+    background:rgba(0,229,160,.08);color:var(--accent);border:1px solid rgba(0,229,160,.15);}
+  .source-badge.stale{background:rgba(255,184,77,.08);color:var(--warn);border-color:rgba(255,184,77,.2);}
+  .market-status{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:2px;margin-bottom:16px;display:inline-block;}
+  .market-open{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.2);}
+  .market-closed{background:rgba(90,100,120,.1);color:var(--muted);border:1px solid var(--border);}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border);
+    border-left:3px solid var(--accent);padding:12px 18px;border-radius:4px;font-size:12px;
+    font-family:var(--mono);color:var(--text);transform:translateY(80px);opacity:0;
+    transition:all .3s ease;z-index:100;max-width:320px;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.error{border-left-color:var(--danger);}
+  footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  footer p{font-family:var(--mono);font-size:10px;color:var(--muted);}
+  .thesis-tag{color:var(--accent) !important;}
+  @media(max-width:600px){body{padding:14px;}.grid{grid-template-columns:1fr;}
+    header{flex-direction:column;gap:14px;align-items:flex-start;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <h1>Edge AI Portfolio Monitor</h1>
+    <p id="last-updated">載入中...</p>
+  </div>
+  <div class="header-right">
+    <button class="update-btn" id="refreshBtn" onclick="refreshAll()">⟳ 一鍵更新</button>
+  </div>
+</header>
+
+<div id="marketStatusWrap"></div>
+<div class="grid" id="stockGrid"></div>
+<div class="toast" id="toast"></div>
+
+<footer>
+  <p>⚠ 資料來源：Yahoo Finance，15分鐘延遲。僅供參考，不構成投資建議。</p>
+  <p class="thesis-tag">EDGE AI INFRASTRUCTURE THESIS</p>
+</footer>
+
+<script>
+// ── 股票設定 ──────────────────────────────────────────────────────────
+const STOCKS = [
+  { ticker:'ZBRA', name:'Zebra Technologies', tier:'core', allocation:30,
+    thesis:'供應鏈資料網路', analystTarget:329,
+    week52Low:195, week52High:323, color:'#00e5a0',
+    seed:256.24 },
+  { ticker:'TRMB', name:'Trimble Inc.', tier:'core', allocation:26,
+    thesis:'建築/工程 OS — ARR 紀錄新高', analystTarget:92,
+    week52Low:52.80, week52High:87.50, color:'#00e5a0',
+    seed:55.70 },
+  { ticker:'PATH', name:'UiPath', tier:'core', allocation:23,
+    thesis:'AI 自動化執行層 — GAAP 首季獲利', analystTarget:15,
+    week52Low:9.20, week52High:19.84, color:'#00e5a0',
+    seed:11.11 },
+  { ticker:'IOT', name:'Samsara Inc.', tier:'core', allocation:21,
+    thesis:'工業邊緣 IoT — ARR $2B', analystTarget:44.78,
+    week52Low:23.38, week52High:47.47, color:'#00e5a0',
+    seed:33.25 },
+  { ticker:'PTC', name:'PTC Inc.', tier:'satellite', allocation:0,
+    thesis:'工業數位孿生 — 衛星觀察中', analystTarget:180,
+    week52Low:130.89, week52High:219.69, color:'#00b3ff',
+    seed:138.28 }
+];
+
+// ── 初始化：用種子價格建立近7日走勢 ─────────────────────────────────
+STOCKS.forEach(s => {
+  const hist = [];
+  let p = s.seed * (1 + (Math.random()-0.5)*0.04);
+  for(let i=6;i>0;i--){
+    p = p*(1+(Math.random()-0.49)*0.018);
+    hist.push(parseFloat(p.toFixed(2)));
+  }
+  hist.push(s.seed);
+  s.history = hist;
+  s.currentPrice = s.seed;
+  s.changeAbs = 0;
+  s.changePct = 0;
+  s.isLive = false;
+});
+
+// ── Yahoo Finance Proxy ───────────────────────────────────────────────
+// 使用 allorigins.win 繞過 CORS（免費公開 proxy）
+async function fetchYahoo(ticker) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=10d`;
+  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+  const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error('proxy error');
+  const wrapper = await res.json();
+  const data = JSON.parse(wrapper.contents);
+  const result = data.chart.result[0];
+  const closes = result.indicators.quote[0].close;
+  const timestamps = result.timestamp;
+  // filter nulls
+  const valid = closes.map((c,i)=>({c,t:timestamps[i]})).filter(x=>x.c!=null);
+  const meta = result.meta;
+  return {
+    price: meta.regularMarketPrice,
+    prevClose: meta.chartPreviousClose || meta.previousClose,
+    change: meta.regularMarketPrice - (meta.chartPreviousClose || meta.previousClose),
+    changePct: ((meta.regularMarketPrice - (meta.chartPreviousClose||meta.previousClose))/(meta.chartPreviousClose||meta.previousClose))*100,
+    week52Low: meta.fiftyTwoWeekLow,
+    week52High: meta.fiftyTwoWeekHigh,
+    marketState: meta.marketState,  // REGULAR / PRE / POST / CLOSED
+    history: valid.slice(-7).map(x=>parseFloat(x.c.toFixed(2))),
+    timestamps: valid.slice(-7).map(x=>x.t)
+  };
+}
+
+function tsToLabel(ts) {
+  const d = new Date(ts*1000);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+// ── 畫 sparkline ──────────────────────────────────────────────────────
+function drawSparkline(svgEl, prices, labels, color) {
+  svgEl.innerHTML = '';
+  const W = svgEl.clientWidth || 320, H = 52, px = 6, py = 6;
+  const minP = Math.min(...prices), maxP = Math.max(...prices), rng = maxP-minP||1;
+  const ns = 'http://www.w3.org/2000/svg';
+  const pts = prices.map((p,i)=>[
+    px+(i/(prices.length-1))*(W-px*2),
+    H-py-((p-minP)/rng)*(H-py*2)
+  ]);
+  const gId = 'g'+Math.random().toString(36).slice(2);
+  const defs = document.createElementNS(ns,'defs');
+  defs.innerHTML = `<linearGradient id="${gId}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${color}" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient>`;
+  svgEl.appendChild(defs);
+  const lineD = pts.map((p,i)=>(i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`)).join(' ');
+  const areaD = lineD+` L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
+  const area = document.createElementNS(ns,'path');
+  area.setAttribute('d',areaD); area.setAttribute('fill',`url(#${gId})`);
+  svgEl.appendChild(area);
+  const line = document.createElementNS(ns,'path');
+  line.setAttribute('d',lineD); line.setAttribute('fill','none');
+  line.setAttribute('stroke',color); line.setAttribute('stroke-width','1.5');
+  line.setAttribute('stroke-linejoin','round');
+  svgEl.appendChild(line);
+  pts.forEach(([x,y],i)=>{
+    const isLast = i===pts.length-1;
+    if(isLast){
+      const c = document.createElementNS(ns,'circle');
+      c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',3);
+      c.setAttribute('fill',color); svgEl.appendChild(c);
+      const lbl = document.createElementNS(ns,'text');
+      lbl.setAttribute('x',x);lbl.setAttribute('y',y-7);
+      lbl.setAttribute('text-anchor','middle');lbl.setAttribute('font-size','8');
+      lbl.setAttribute('fill',color);lbl.setAttribute('font-family','Space Mono,monospace');
+      lbl.setAttribute('font-weight','700');
+      lbl.textContent = '$'+prices[i].toFixed(2);
+      svgEl.appendChild(lbl);
+    }
+    const t = document.createElementNS(ns,'text');
+    t.setAttribute('x',x);t.setAttribute('y',H+11);
+    t.setAttribute('text-anchor','middle');t.setAttribute('font-size','7.5');
+    t.setAttribute('fill',isLast?color:'#3a4555');
+    t.setAttribute('font-family','Space Mono,monospace');
+    t.setAttribute('font-weight',isLast?'700':'400');
+    t.textContent = (labels&&labels[i])||'';
+    svgEl.appendChild(t);
+  });
+}
+
+// ── 建立卡片 HTML ──────────────────────────────────────────────────────
+function renderCard(s) {
+  const price = s.currentPrice;
+  const pos = Math.max(0,Math.min(100,((price-s.week52Low)/(s.week52High-s.week52Low))*100));
+  const posClr = pos<25?'var(--warn)':pos<60?'var(--accent2)':'var(--accent)';
+  const upside = ((s.analystTarget-price)/price*100).toFixed(0);
+  const circ = 2*Math.PI*28;
+  const fill = (s.allocation/100)*circ;
+  const chgSign = s.changePct>=0?'+':'';
+  return `
+  <div class="card ${s.tier}" id="card-${s.ticker}">
+    <div class="card-header">
+      <div><div class="ticker">${s.ticker}</div><div class="company-name">${s.name}</div></div>
+      <span class="tier-badge tier-${s.tier}">${s.tier==='core'?'核心':'衛星'}</span>
+    </div>
+    <div class="metrics-row">
+      <div class="alloc-ring">
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <circle class="ring-track" cx="36" cy="36" r="28"/>
+          <circle class="ring-fill" cx="36" cy="36" r="28"
+            stroke="${s.color}" stroke-dasharray="${fill} ${circ}"/>
+        </svg>
+        <div class="alloc-label">
+          <div class="alloc-pct" style="color:${s.color}">${s.allocation}%</div>
+          <div class="alloc-sub">建倉比</div>
+        </div>
+      </div>
+      <div>
+        <div class="current-price" style="color:${s.color}" id="price-${s.ticker}">$${price.toFixed(2)}</div>
+        <div class="price-change ${s.changePct>=0?'up':'dn'}" id="chg-${s.ticker}">
+          ${chgSign}${s.changeAbs.toFixed(2)} (${chgSign}${s.changePct.toFixed(2)}%)
+        </div>
+        <div class="price-meta">${s.thesis}</div>
+      </div>
+    </div>
+    <div class="week52">
+      <div class="week52-label">
+        <span>52 週區間</span>
+        <span id="w52pos-${s.ticker}" style="color:${posClr}">位於 ${pos.toFixed(0)}%</span>
+      </div>
+      <div class="week52-track">
+        <div class="week52-fill" id="w52fill-${s.ticker}"
+          style="width:${pos}%;background:linear-gradient(to right,#1e2530,${posClr});"></div>
+        <div class="week52-dot" id="w52dot-${s.ticker}"
+          style="left:${pos}%;background:${posClr};"></div>
+      </div>
+      <div class="week52-vals">
+        <span>低 $${s.week52Low}</span>
+        <span id="w52cur-${s.ticker}" style="color:${posClr}">▲ $${price.toFixed(2)}</span>
+        <span>高 $${s.week52High}</span>
+      </div>
+    </div>
+    <div class="chart-area">
+      <div class="chart-label">近 7 日走勢</div>
+      <div class="sparkline-wrap">
+        <svg id="spark-${s.ticker}" viewBox="0 0 320 52" preserveAspectRatio="none"
+          style="width:100%;height:52px;overflow:visible;"></svg>
+      </div>
+    </div>
+    <div class="status-row">
+      <div class="status-dot ${s.isLive?'live':'stale'}" id="dot-${s.ticker}"></div>
+      <div class="status-text" id="src-${s.ticker}">
+        分析師目標 <span style="color:var(--accent2)">$${s.analystTarget}</span>
+        &nbsp;·&nbsp; 上行 <span class="${parseInt(upside)>0?'up':'dn'}">+${upside}%</span>
+      </div>
+      <span class="source-badge ${s.isLive?'':'stale'}" id="badge-${s.ticker}">
+        ${s.isLive?'LIVE':'SEED'}
+      </span>
+    </div>
+  </div>`;
+}
+
+function updateCardDOM(s) {
+  const price = s.currentPrice;
+  const pos = Math.max(0,Math.min(100,((price-s.week52Low)/(s.week52High-s.week52Low))*100));
+  const posClr = pos<25?'var(--warn)':pos<60?'var(--accent2)':'var(--accent)';
+  const chgSign = s.changePct>=0?'+':'';
+  const upside = ((s.analystTarget-price)/price*100).toFixed(0);
+
+  const set = (id,val,style)=>{const e=document.getElementById(id);if(e){e.textContent=val;if(style)Object.assign(e.style,style);}};
+  const setClass = (id,cls)=>{const e=document.getElementById(id);if(e)e.className=cls;};
+
+  set(`price-${s.ticker}`, `$${price.toFixed(2)}`);
+  const chgEl = document.getElementById(`chg-${s.ticker}`);
+  if(chgEl){
+    chgEl.textContent = `${chgSign}${s.changeAbs.toFixed(2)} (${chgSign}${s.changePct.toFixed(2)}%)`;
+    chgEl.className = 'price-change '+(s.changePct>=0?'up':'dn');
+  }
+  set(`w52pos-${s.ticker}`, `位於 ${pos.toFixed(0)}%`, {color:posClr});
+  set(`w52cur-${s.ticker}`, `▲ $${price.toFixed(2)}`, {color:posClr});
+  const fill = document.getElementById(`w52fill-${s.ticker}`);
+  const dot  = document.getElementById(`w52dot-${s.ticker}`);
+  if(fill){fill.style.width=pos+'%';fill.style.background=`linear-gradient(to right,#1e2530,${posClr})`;}
+  if(dot){dot.style.left=pos+'%';dot.style.background=posClr;}
+
+  const srcEl = document.getElementById(`src-${s.ticker}`);
+  if(srcEl) srcEl.innerHTML = `分析師目標 <span style="color:var(--accent2)">$${s.analystTarget}</span>&nbsp;·&nbsp; 上行 <span class="${parseInt(upside)>0?'up':'dn'}">+${upside}%</span>`;
+
+  const dotEl = document.getElementById(`dot-${s.ticker}`);
+  if(dotEl) dotEl.className = 'status-dot '+(s.isLive?'live':'stale');
+  const badgeEl = document.getElementById(`badge-${s.ticker}`);
+  if(badgeEl){badgeEl.textContent=s.isLive?'LIVE':'SEED';badgeEl.className='source-badge '+(s.isLive?'':'stale');}
+
+  // 52w update from Yahoo
+  const w52lEl = document.querySelector(`#card-${s.ticker} .week52-vals span:first-child`);
+  const w52hEl = document.querySelector(`#card-${s.ticker} .week52-vals span:last-child`);
+  if(w52lEl) w52lEl.textContent = `低 $${s.week52Low}`;
+  if(w52hEl) w52hEl.textContent = `高 $${s.week52High}`;
+
+  const svgEl = document.getElementById(`spark-${s.ticker}`);
+  if(svgEl && s.history && s.history.length>1){
+    drawSparkline(svgEl, s.history, s.histLabels, s.color);
+  }
+}
+
+function isMarketOpen() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const day = et.getDay();
+  const h = et.getHours(), m = et.getMinutes();
+  const mins = h*60+m;
+  if(day===0||day===6) return false;
+  return mins>=570 && mins<960; // 9:30–16:00
+}
+
+// ── 主更新函數 ────────────────────────────────────────────────────────
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading'); btn.textContent = '更新中...';
+  showToast('連接 Yahoo Finance...', false);
+
+  let successCount = 0, failCount = 0;
+
+  await Promise.allSettled(STOCKS.map(async s => {
+    try {
+      const data = await fetchYahoo(s.ticker);
+      s.currentPrice = data.price;
+      s.changeAbs = data.change;
+      s.changePct = data.changePct;
+      s.week52Low = parseFloat(data.week52Low.toFixed(2));
+      s.week52High = parseFloat(data.week52High.toFixed(2));
+      s.history = data.history;
+      s.histLabels = data.timestamps.map(tsToLabel);
+      s.isLive = true;
+      s.marketState = data.marketState;
+      updateCardDOM(s);
+      successCount++;
+    } catch(e) {
+      console.warn(`${s.ticker} fetch failed:`, e);
+      failCount++;
+    }
+  }));
+
+  // market status
+  const anyLive = STOCKS.find(s=>s.isLive);
+  const mState = anyLive?.marketState || (isMarketOpen()?'REGULAR':'CLOSED');
+  renderMarketStatus(mState);
+
+  const now = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei',
+    year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('last-updated').innerHTML =
+    `更新：${now} TWN<br><span style="color:${failCount>0?'var(--warn)':'var(--accent)'}">` +
+    `✓ ${successCount} 支成功${failCount>0?` · ⚠ ${failCount} 支失敗`:''}</span>`;
+
+  if(successCount>0) showToast(`✓ ${successCount} 支股票已更新`, false);
+  else showToast('⚠ 全部失敗，請稍後再試（Yahoo 可能限速）', true);
+
+  btn.classList.remove('loading'); btn.textContent = '⟳ 一鍵更新';
+}
+
+function renderMarketStatus(state) {
+  const wrap = document.getElementById('marketStatusWrap');
+  const isOpen = state==='REGULAR';
+  const label = isOpen?'● 美股交易中 (ET 09:30–16:00)':
+    state==='PRE'?'○ 盤前交易':
+    state==='POST'?'○ 盤後交易':
+    '○ 美股休市中';
+  wrap.innerHTML = `<span class="market-status ${isOpen?'market-open':'market-closed'}">${label}</span>`;
+}
+
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show'+(isErr?' error':'');
+  setTimeout(()=>{t.className='toast';}, 4000);
+}
+
+// ── 初始化 ─────────────────────────────────────────────────────────────
+function init() {
+  const grid = document.getElementById('stockGrid');
+  grid.innerHTML = STOCKS.map(s=>renderCard(s)).join('');
+  setTimeout(()=>{
+    STOCKS.forEach(s=>{
+      const el = document.getElementById(`spark-${s.ticker}`);
+      if(el) drawSparkline(el, s.history, null, s.color);
+    });
+  }, 80);
+  renderMarketStatus(isMarketOpen()?'REGULAR':'CLOSED');
+  document.getElementById('last-updated').innerHTML =
+    '種子資料（6/5 收盤）· 點擊更新取得即時資訊';
+  // 自動嘗試更新一次
+  refreshAll();
+}
+
+init();
+</script>
+</body>
+</html>
