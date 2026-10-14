@@ -2,11 +2,11 @@
 
 [long_term]
 # 美股長期配置候選
-tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "BRK-B", "JNJ", "VOO"]
+tickers = ["KBR", "PATH", "CRNC", "SOUN", "OWLS", "NVDA", "AMD"]
 
 [short_term]
 # 比特幣相關資產，短線進出
-tickers = ["BTC-USD", "IBIT", "MSTR", "COIN"]
+tickers = ["MSTR"]
 
 [risk]
 max_single_weight = 0.20   # 單一長期持股上限
