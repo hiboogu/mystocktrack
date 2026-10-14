@@ -62,3 +62,33 @@ def test_holdings_reach_the_narrative(provider, held_config):
     PortfolioManager(provider, held_config, llm).run()
     narrative_prompt = llm.calls[-1][1]
     assert '"holdings"' in narrative_prompt and "JUNK" in narrative_prompt
+
+
+def test_speculative_action_rules():
+    from mystocktrack.agents.portfolio_manager import speculative_action
+    from mystocktrack.config import RiskLimits
+
+    risk = RiskLimits(speculative_max_weight=0.05, speculative_max_loss=0.5)
+    assert speculative_action(-0.6, 0.02, risk, "", "2026-10-14") == "停損出場（觸及硬停損）"
+    assert (
+        speculative_action(-0.1, 0.02, risk, "2026-06-30", "2026-10-14") == "催化劑到期，重新檢討"
+    )
+    assert speculative_action(-0.1, 0.12, risk, "2027-06-30", "2026-10-14") == "投機持有，減碼至 5%"
+    assert speculative_action(-0.1, 0.03, risk, "", "2026-10-14") == "投機持有"
+
+
+def test_speculative_holding_ignores_long_term_exit(provider, held_config, snapshots):
+    from dataclasses import replace
+
+    from mystocktrack.config import Holding
+
+    cost = snapshots["JUNK"].price * 1.05  # a small loss, well above the hard line
+    holdings = {**held_config.holdings, "JUNK": Holding(cost, 5, speculative=True, catalyst="新品")}
+    rec = PortfolioManager(provider, replace(held_config, holdings=holdings)).run()
+    junk = {h.ticker: h for h in rec.holdings}["JUNK"]
+    assert junk.score < 0  # the team is still bearish
+    assert junk.action.startswith("投機持有")
+    assert junk.stop_price == round(cost * 0.5, 2)
+    assert sum(h.weight for h in rec.holdings) == pytest.approx(1.0, abs=0.001)
+    md = to_markdown(rec)
+    assert "JUNK（投機）" in md and "催化劑：新品" in md
