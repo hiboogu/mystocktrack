@@ -1,15 +1,14 @@
-# 觀察清單：美股長期配置 + 比特幣相關資產短線
-
+# Research universe. Ownership and cost basis live in portfolio.toml.
+# All equities below use the existing long-term fundamentals + macro framework.
 [long_term]
-# 美股長期配置候選
-tickers = ["KBR", "PATH", "CRNC", "SOUN", "OWLS", "NVDA", "AMD"]
+tickers = ["KBR", "PATH", "CRNC", "SOUN", "OWLS", "NVDA", "AMD", "HON", "TRMB", "IOT"]
 
+# Preserve the existing BTC-linked short-term trading treatment of MSTR.
 [short_term]
-# 比特幣相關資產，短線進出
 tickers = ["MSTR"]
 
 [risk]
-max_single_weight = 0.20   # 單一長期持股上限
-max_crypto_sleeve = 0.10   # 比特幣相關短線部位占總資產上限
-high_volatility = 0.45     # 年化波動率高於此值視為高風險
-deep_drawdown = 0.35       # 一年內最大回撤超過此值視為高風險
+max_single_weight = 0.20
+max_crypto_sleeve = 0.10
+high_volatility = 0.45
+deep_drawdown = 0.35
