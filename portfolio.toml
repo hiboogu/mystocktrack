@@ -1,0 +1,34 @@
+# User-provided positions, 2026-10-14; USD average cost, excluding fees.
+# Unlisted tickers (NVDA, AMD, HON, TRMB, IOT) are watch-only.
+[currency]
+base = "USD"
+
+[[positions]]
+ticker = "KBR"
+avg_cost = 38.1055
+quantity = 20
+
+[[positions]]
+ticker = "MSTR"
+avg_cost = 126.315
+quantity = 2
+
+[[positions]]
+ticker = "PATH"
+avg_cost = 18.0451
+quantity = 78
+
+[[positions]]
+ticker = "CRNC"
+avg_cost = 8.0904
+quantity = 25
+
+[[positions]]
+ticker = "SOUN"
+avg_cost = 6.0854
+quantity = 26
+
+[[positions]]
+ticker = "OWLS"
+avg_cost = 5.3672
+quantity = 60
