@@ -14,14 +14,23 @@ class RiskLimits:
     high_volatility: float = 0.45
     deep_drawdown: float = 0.35
     max_loss_from_cost: float = 0.30
+    speculative_max_weight: float = 0.05
+    speculative_max_loss: float = 0.50
 
 
 @dataclass(frozen=True)
 class Holding:
-    """A position the user already owns: average cost per share and share count."""
+    """A position the user already owns: average cost per share and share count.
+
+    A speculative holding is a deliberate theme bet. It is judged by position size, a hard
+    loss line and a catalyst deadline instead of the long-term exit rules.
+    """
 
     cost: float
     shares: float
+    speculative: bool = False
+    catalyst: str = ""
+    review_by: str = ""  # ISO date; after it the bet gets re-examined
 
 
 @dataclass(frozen=True)

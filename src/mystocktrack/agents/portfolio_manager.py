@@ -10,7 +10,7 @@ from datetime import date
 from .. import DISCLAIMER
 from .. import indicators as ind
 from ..bus import BROADCAST, Message, MessageBus
-from ..config import Config
+from ..config import Config, RiskLimits
 from ..data import MACRO_TICKERS, DataProvider, Snapshot
 from ..llm import LLM
 from .base import AnalystAgent
@@ -48,6 +48,10 @@ class HoldingReview:
     score: float
     action: str
     stop_price: float | None
+    weight: float = 0.0  # share of the total value of all holdings
+    speculative: bool = False
+    catalyst: str = ""
+    review_by: str = ""
 
 
 @dataclass
@@ -71,7 +75,8 @@ class PortfolioManager:
         "你是投資組合經理，帶領基本面分析師、總經情緒分析師、比特幣短線交易員與風控經理。"
         "使用者偏好：美股長期配置，比特幣相關資產短線進出。請用繁體中文寫給一般投資人看的"
         "投資建議摘要，先講結論，再逐一說明使用者目前持股（holdings）該續抱、加碼、減碼或停損"
-        "及理由，接著點評沒有持股的觀察名單，最後講風險並提醒這不是投資建議。"
+        "及理由；speculative 為 true 的持股是使用者刻意的題材投機，請依部位上限、硬停損與催化劑"
+        "評論，不要用長期基本面標準要求出場。接著點評沒有持股的觀察名單，最後講風險並提醒這不是投資建議。"
     )
 
     def __init__(self, data: DataProvider, config: Config, llm: LLM | None = None):
@@ -210,18 +215,27 @@ class PortfolioManager:
         self, snaps: dict[str, Snapshot], positions: list[Position], short_term: set[str]
     ) -> list[HoldingReview]:
         scores = {p.ticker: p for p in positions}
+        held = {t: h for t, h in self.config.holdings.items() if t in snaps and t in scores}
+        # Holdings without a price today already show under skipped.
+        total = sum(snaps[t].price * h.shares for t, h in held.items())
+        risk = self.config.risk
+        today = date.today().isoformat()
         reviews = []
-        for t, h in self.config.holdings.items():
-            if t not in snaps or t not in scores:
-                continue  # no price today; the ticker already shows under skipped
+        for t, h in held.items():
             snap, pos = snaps[t], scores[t]
             price = snap.price
             pnl_pct = price / h.cost - 1 if h.cost else 0.0
-            if t in short_term:
-                stop = pos.extras.get("stop_loss")
+            weight = price * h.shares / total if total else 0.0
+            if h.speculative:
+                stop = round(h.cost * (1 - risk.speculative_max_loss), 2)
+                action = speculative_action(pnl_pct, weight, risk, h.review_by, today)
             else:
-                atr = ind.avg_true_range_pct(snap.closes, 14)
-                stop = round(price * (1 - 3 * atr), 2) if atr else None
+                if t in short_term:
+                    stop = pos.extras.get("stop_loss")
+                else:
+                    atr = ind.avg_true_range_pct(snap.closes, 14)
+                    stop = round(price * (1 - 3 * atr), 2) if atr else None
+                action = holding_action(pos.score, pnl_pct, risk.max_loss_from_cost)
             reviews.append(
                 HoldingReview(
                     ticker=t,
@@ -232,8 +246,12 @@ class PortfolioManager:
                     pnl=round((price - h.cost) * h.shares, 2),
                     pnl_pct=round(pnl_pct, 4),
                     score=pos.score,
-                    action=holding_action(pos.score, pnl_pct, self.config.risk.max_loss_from_cost),
+                    action=action,
                     stop_price=stop,
+                    weight=round(weight, 4),
+                    speculative=h.speculative,
+                    catalyst=h.catalyst,
+                    review_by=h.review_by,
                 )
             )
         return sorted(reviews, key=lambda r: r.pnl_pct)
@@ -278,6 +296,19 @@ def holding_action(score: float, pnl_pct: float, max_loss: float) -> str:
     if score >= 0.3:
         return "可加碼"
     return "續抱"
+
+
+def speculative_action(
+    pnl_pct: float, weight: float, risk: RiskLimits, review_by: str, today: str
+) -> str:
+    """A theme bet ignores the team's score: only size, the hard loss line and the deadline count."""
+    if pnl_pct <= -risk.speculative_max_loss:
+        return "停損出場（觸及硬停損）"
+    if review_by and today > review_by:
+        return "催化劑到期，重新檢討"
+    if weight > risk.speculative_max_weight:
+        return f"投機持有，減碼至 {risk.speculative_max_weight:.0%}"
+    return "投機持有"
 
 
 def allocate(scores: dict[str, float], caps: dict[str, float], budget: float) -> dict[str, float]:
