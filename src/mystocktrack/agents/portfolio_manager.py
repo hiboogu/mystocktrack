@@ -123,7 +123,8 @@ class PortfolioManager:
         short_term = self._short_term(short_snaps, views)
         crypto_total = sum(p.weight for p in short_term)
         long_term = self._long_term(long_snaps, views, profiles, budget=1 - crypto_total)
-        cash = round(1 - crypto_total - sum(p.weight for p in long_term), 4)
+        # Rounded weights can overshoot by a hair; never report negative cash.
+        cash = max(0.0, round(1 - crypto_total - sum(p.weight for p in long_term), 4))
 
         rec = Recommendation(
             as_of=date.today().isoformat(),
