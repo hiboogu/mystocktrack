@@ -63,3 +63,12 @@ def test_challenge_lowers_conviction_without_llm(snapshots):
     assert before > 0
     assert after.revised and after.score < before
     assert bus.inbox("risk_manager", "rebuttal")
+
+
+def test_rebuttal_sees_market_context(snapshots):
+    llm = FakeLLM()
+    agent = MacroSentimentAnalyst(MessageBus(), llm)
+    context = {"summary": {"market_notes": ["VIX 15.0 情緒平穩"]}}
+    agent.analyze({"QUAL": snapshots["QUAL"]}, context, "pm")
+    agent.respond_to_challenge("QUAL", "太樂觀", snapshots["QUAL"], "pm")
+    assert "VIX 15.0" in llm.calls[-1][1]

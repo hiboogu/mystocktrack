@@ -72,6 +72,7 @@ class AnalystAgent:
         self.bus = bus
         self.llm = llm
         self.views: dict[str, View] = {}
+        self.market: dict = {}
 
     # Subclasses implement the deterministic analysis.
     def rule_view(self, snap: Snapshot, context: dict) -> View:
@@ -81,6 +82,7 @@ class AnalystAgent:
         return {"ticker": snap.ticker, "metrics": snap.metrics()}
 
     def analyze(self, snapshots: dict[str, Snapshot], context: dict, lead: str) -> dict[str, View]:
+        self.market = context.get("summary", {})
         drafts = {t: self.rule_view(s, context) for t, s in snapshots.items()}
         self.views = self._refine(drafts, snapshots, context)
         for v in self.views.values():
@@ -100,7 +102,7 @@ class AnalystAgent:
         prompt = json.dumps(
             {
                 "task": "根據證據檢查並修正規則引擎的初稿分數（-1 看空到 +1 看多）。",
-                "context": context.get("summary", {}),
+                "context": self.market,
                 "evidence": [self.evidence(s) for s in snapshots.values()],
                 "draft": [
                     {"ticker": v.ticker, "score": v.score, "rationale": v.rationale}
@@ -129,6 +131,8 @@ class AnalystAgent:
                     "task": "風控經理質疑你的看法。請決定維持或下修分數，並說明理由。",
                     "your_view": {"score": view.score, "rationale": view.rationale},
                     "challenge": challenge,
+                    # Same market backdrop the draft saw, so the answer can cite VIX and rates.
+                    "context": self.market,
                     "evidence": self.evidence(snap),
                 },
                 ensure_ascii=False,
