@@ -29,7 +29,8 @@ jobs:
         env:
           # Without this secret the agents still run on their rule-based logic.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: mystocktrack run --out site/report
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: mystocktrack run --models both --out site/report
       - name: Keep the existing dashboard as the site home page
         run: cp index.html site/index.html
       - uses: actions/upload-artifact@v4
