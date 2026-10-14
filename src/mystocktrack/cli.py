@@ -10,6 +10,7 @@ from .config import load_config
 from .data import YahooDataProvider
 from .llm import default_llm
 from .openai_llm import default_openai_llm
+from .holdings import holdings_markdown
 from .report import to_html, to_json, to_markdown
 from .shared_snapshot import capture, load_snapshot, save_snapshot
 
@@ -22,6 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--out", default="reports")
     run.add_argument("--models", choices=["both", "claude", "gpt"], default="both")
     run.add_argument("--snapshot", help="reuse a previously saved market-data JSON snapshot")
+    run.add_argument("--portfolio", default="portfolio.toml", help="portfolio holdings file")
     run.add_argument("--offline", action="store_true", help="use deterministic rule engines only")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -46,6 +48,8 @@ def main(argv: list[str] | None = None) -> int:
         directory = out / model
         directory.mkdir(parents=True, exist_ok=True)
         md = to_markdown(rec)
+        if Path(args.portfolio).exists():
+            md += "\n" + holdings_markdown(args.portfolio, provider)
         for name in (f"{rec.as_of}.md", "latest.md"):
             (directory / name).write_text(md, encoding="utf-8")
         (directory / f"{rec.as_of}.json").write_text(to_json(rec), encoding="utf-8")
