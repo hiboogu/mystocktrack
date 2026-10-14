@@ -1,0 +1,52 @@
+name: Daily report
+
+# Runs the agent team after the US close on weekdays and publishes the report to GitHub Pages.
+on:
+  schedule:
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[site]"
+      - name: Run agents
+        env:
+          # Without this secret the agents still run on their rule-based logic.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: mystocktrack run --out site/report
+      - name: Keep the existing dashboard as the site home page
+        run: cp index.html site/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report
+          path: site
+          retention-days: 90
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: report
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

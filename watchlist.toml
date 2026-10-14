@@ -1,0 +1,15 @@
+# 觀察清單：美股長期配置 + 比特幣相關資產短線
+
+[long_term]
+# 美股長期配置候選
+tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "BRK-B", "JNJ", "VOO"]
+
+[short_term]
+# 比特幣相關資產，短線進出
+tickers = ["BTC-USD", "IBIT", "MSTR", "COIN"]
+
+[risk]
+max_single_weight = 0.20   # 單一長期持股上限
+max_crypto_sleeve = 0.10   # 比特幣相關短線部位占總資產上限
+high_volatility = 0.45     # 年化波動率高於此值視為高風險
+deep_drawdown = 0.35       # 一年內最大回撤超過此值視為高風險
