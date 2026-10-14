@@ -73,3 +73,15 @@ def test_run_fails_when_no_data_at_all(config):
 
     with pytest.raises(RuntimeError, match="no market data"):
         PortfolioManager(StaticDataProvider({}), config).run()
+
+
+def test_cash_never_negative_when_fully_invested(provider, config, monkeypatch):
+    from mystocktrack.agents import portfolio_manager as pm
+
+    # Weights that round up past 100% must not produce "-0.0%" cash.
+    monkeypatch.setattr(
+        pm, "allocate", lambda scores, caps, budget: {"QUAL": 0.50005, "VOO": 0.50005}
+    )
+    rec = PortfolioManager(provider, config).run()
+    assert rec.cash == 0.0
+    assert "現金：0.0%" in to_markdown(rec)

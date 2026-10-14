@@ -26,7 +26,9 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
     config = load_config(args.config)
-    pm = PortfolioManager(YahooDataProvider(), config, default_llm(args.offline))
+    llm = default_llm(args.offline)
+    logging.info("Claude analysis: %s", "on" if llm else "off (rule-based only)")
+    pm = PortfolioManager(YahooDataProvider(), config, llm)
     rec = pm.run()
 
     out = Path(args.out)
