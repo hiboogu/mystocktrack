@@ -41,7 +41,7 @@ mystocktrack run                    # 報告寫到 reports/
 mystocktrack run --offline          # 強制不呼叫 Claude
 ```
 
-觀察清單與風控門檻在 `watchlist.toml` 修改。
+觀察清單、目前持股（成本與股數）與風控門檻都在 `watchlist.toml` 修改。有填持股時，報告會多一段「我的持股檢視」，列出每檔的未實現損益，以及續抱、可加碼、減碼或停損出場的建議與停損參考價。
 
 ## 自動化測試與部署
 

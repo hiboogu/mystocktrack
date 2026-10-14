@@ -1,15 +1,26 @@
 # 觀察清單：美股長期配置 + 比特幣相關資產短線
+# 有持股的標的放在 [holdings]，會自動納入分析，不必再列進 tickers。
 
 [long_term]
-# 美股長期配置候選
-tickers = ["KBR", "PATH", "CRNC", "SOUN", "OWLS", "NVDA", "AMD"]
+# 美股長期配置：目前沒有持股、想持續觀察的標的
+tickers = ["NVDA", "AMD", "HON", "TRMB", "IOT"]
 
 [short_term]
 # 比特幣相關資產，短線進出
 tickers = ["MSTR"]
+
+[holdings]
+# 目前持股：cost = 平均買進成本（美元／股），shares = 股數
+KBR = { cost = 38.1055, shares = 20 }
+MSTR = { cost = 126.315, shares = 2 }
+PATH = { cost = 18.0451, shares = 78 }
+CRNC = { cost = 8.0904, shares = 25 }
+SOUN = { cost = 6.0854, shares = 26 }
+OWLS = { cost = 5.3672, shares = 60 }
 
 [risk]
 max_single_weight = 0.20   # 單一長期持股上限
 max_crypto_sleeve = 0.10   # 比特幣相關短線部位占總資產上限
 high_volatility = 0.45     # 年化波動率高於此值視為高風險
 deep_drawdown = 0.35       # 一年內最大回撤超過此值視為高風險
+max_loss_from_cost = 0.30  # 持股虧損超過成本的此比例，且團隊不看多時建議停損
