@@ -64,9 +64,29 @@ def to_markdown(rec: Recommendation) -> str:
         lines += ["## 經理摘要", "", rec.narrative.strip(), ""]
     if rec.regime_notes:
         lines += ["## 市場環境", "", *[f"- {n}" for n in rec.regime_notes], ""]
+    if rec.holdings:
+        cost = sum(h.cost * h.shares for h in rec.holdings)
+        value = sum(h.value for h in rec.holdings)
+        pnl = value - cost
+        lines += [
+            "## 我的持股檢視",
+            "",
+            f"市值 ${value:,.2f}，成本 ${cost:,.2f}，未實現損益 ${pnl:+,.2f}"
+            f"（{pnl / cost if cost else 0:+.1%}）",
+            "",
+            "| 標的 | 股數 | 成本 | 現價 | 市值 | 未實現損益 | 報酬率 | 綜合分數 | 建議 | 停損參考 |",
+            "|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        for h in rec.holdings:
+            stop = f"{h.stop_price:,.2f}" if h.stop_price else ""
+            lines.append(
+                f"| {h.ticker} | {h.shares:g} | {h.cost:,.2f} | {h.price:,.2f} | {h.value:,.2f} | "
+                f"{h.pnl:+,.2f} | {h.pnl_pct:+.1%} | {h.score:+.2f} | **{h.action}** | {stop} |"
+            )
+        lines.append("")
 
     lines += [
-        "## 美股長期配置",
+        "## 美股長期配置（含觀察名單）",
         "",
         "| 標的 | 綜合分數 | 建議權重 | 動作 | 基本面 | 總經情緒 |",
         "|---|---|---|---|---|---|",

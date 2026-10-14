@@ -3,7 +3,7 @@ import random
 
 import pytest
 
-from mystocktrack.config import Config, RiskLimits
+from mystocktrack.config import Config, Holding, RiskLimits
 from mystocktrack.data import Snapshot, StaticDataProvider
 
 
@@ -58,6 +58,20 @@ def config():
         long_term=["QUAL", "JUNK", "VOO"],
         short_term=["BTC-USD", "MSTR"],
         risk=RiskLimits(),
+    )
+
+
+@pytest.fixture
+def held_config(config):
+    return Config(
+        long_term=config.long_term,
+        short_term=config.short_term,
+        risk=config.risk,
+        holdings={
+            "QUAL": Holding(cost=50.0, shares=10),
+            "JUNK": Holding(cost=200.0, shares=5),
+            "MSTR": Holding(cost=100.0, shares=2),
+        },
     )
 
 
