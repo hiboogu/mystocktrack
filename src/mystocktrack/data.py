@@ -8,6 +8,18 @@ from typing import Protocol
 from . import indicators as ind
 
 MACRO_TICKERS = {"spx": "^GSPC", "vix": "^VIX", "tnx": "^TNX"}
+# Fetched only when the watchlist has Tokyo-listed stocks.
+JAPAN_MACRO_TICKERS = {"nikkei": "^N225", "usdjpy": "JPY=X"}
+
+
+def market_of(ticker: str) -> str:
+    """ "JP" for Tokyo Stock Exchange tickers (Yahoo's .T suffix), else "US"."""
+    return "JP" if ticker.upper().endswith(".T") else "US"
+
+
+def currency_of(ticker: str) -> str:
+    return "JPY" if market_of(ticker) == "JP" else "USD"
+
 
 FUNDAMENTAL_FIELDS = (
     "trailingPE",
@@ -35,6 +47,14 @@ class Snapshot:
     @property
     def price(self) -> float:
         return self.closes[-1]
+
+    @property
+    def market(self) -> str:
+        return market_of(self.ticker)
+
+    @property
+    def currency(self) -> str:
+        return currency_of(self.ticker)
 
     def metrics(self) -> dict:
         c = self.closes

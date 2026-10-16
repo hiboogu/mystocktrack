@@ -7,6 +7,7 @@ import json
 from dataclasses import asdict
 
 from .agents import Recommendation
+from .data import market_of
 
 AGENT_TITLES = {
     "portfolio_manager": "投資組合經理",
@@ -58,6 +59,14 @@ def _t(name: str) -> str:
     return AGENT_TITLES.get(name, name)
 
 
+def label(ticker: str, names: dict[str, str]) -> str:
+    """Ticker plus display name; Tokyo stocks are marked as priced in yen."""
+    extra = [names[ticker]] if ticker in names else []
+    if market_of(ticker) == "JP":
+        extra.append("日股，日圓計價")
+    return f"{ticker}（{'，'.join(extra)}）" if extra else ticker
+
+
 def to_markdown(rec: Recommendation) -> str:
     lines = [f"# 投資建議報告 {rec.as_of}", "", f"> {rec.disclaimer}", ""]
     if rec.narrative:
@@ -102,7 +111,7 @@ def to_markdown(rec: Recommendation) -> str:
     ]
     for p in rec.long_term:
         lines.append(
-            f"| {p.ticker} | {p.score:+.2f} | {p.weight:.1%} | {p.action} | "
+            f"| {label(p.ticker, rec.names)} | {p.score:+.2f} | {p.weight:.1%} | {p.action} | "
             f"{p.reasons.get('fundamentals', '')} | {p.reasons.get('macro_sentiment', '')} |"
         )
     lines += [

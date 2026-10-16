@@ -11,12 +11,19 @@ from .. import DISCLAIMER
 from .. import indicators as ind
 from ..bus import BROADCAST, Message, MessageBus
 from ..config import Config, RiskLimits
-from ..data import MACRO_TICKERS, DataProvider, Snapshot
+from ..data import (
+    JAPAN_MACRO_TICKERS,
+    MACRO_TICKERS,
+    DataProvider,
+    Snapshot,
+    currency_of,
+    market_of,
+)
 from ..llm import LLM
 from .base import AnalystAgent
 from .crypto_trader import CryptoTrader
 from .fundamentals import FundamentalsAnalyst
-from .macro_sentiment import MacroSentimentAnalyst, market_regime
+from .macro_sentiment import MacroSentimentAnalyst, japan_regime, market_regime
 from .risk_manager import RiskManager
 
 log = logging.getLogger(__name__)
@@ -65,6 +72,7 @@ class Recommendation:
     transcript: list[Message]
     skipped: list[str] = field(default_factory=list)
     holdings: list[HoldingReview] = field(default_factory=list)
+    names: dict[str, str] = field(default_factory=dict)
     disclaimer: str = DISCLAIMER
 
 
@@ -101,14 +109,22 @@ class PortfolioManager:
         short_snaps = self._fetch(self.config.short_term, skipped)
         if not long_snaps and not short_snaps:
             raise RuntimeError(f"no market data for any ticker: {', '.join(skipped)}")
-        macro = self._fetch(list(MACRO_TICKERS.values()), [])
-        macro = {k: macro[v] for k, v in MACRO_TICKERS.items() if v in macro}
+        macro_tickers = dict(MACRO_TICKERS)
+        if any(market_of(t) == "JP" for t in [*long_snaps, *short_snaps]):
+            macro_tickers |= JAPAN_MACRO_TICKERS
+        macro = self._fetch(list(macro_tickers.values()), [])
+        macro = {k: macro[v] for k, v in macro_tickers.items() if v in macro}
         regime_score, regime_notes = market_regime(macro)
         context = {
             "regime_score": regime_score,
             "regime_notes": regime_notes,
             "summary": {"market_regime_score": regime_score, "market_notes": regime_notes},
         }
+        if "nikkei" in macro or "usdjpy" in macro:
+            jp_score, jp_notes = japan_regime(macro)
+            context |= {"japan_regime_score": jp_score, "japan_regime_notes": jp_notes}
+            context["summary"] |= {"japan_regime_score": jp_score, "japan_notes": jp_notes}
+            regime_notes = regime_notes + [f"日本：{n}" for n in jp_notes]
 
         fundamentals = FundamentalsAnalyst(bus, self.llm)
         macro_agent = MacroSentimentAnalyst(bus, self.llm)
@@ -159,6 +175,7 @@ class PortfolioManager:
             transcript=bus.transcript,
             skipped=skipped,
             holdings=holdings,
+            names=self.config.names,
         )
         rec.narrative = self._narrative(rec)
         bus.send(self.name, BROADCAST, "decision", self._decision_line(rec))
@@ -266,6 +283,7 @@ class PortfolioManager:
             "short_term": [_pos_dict(p) for p in rec.short_term],
             "cash": rec.cash,
             "holdings": [asdict(h) for h in rec.holdings],
+            "names": rec.names,
             "watch_only": [p.ticker for p in rec.long_term if p.ticker not in self.config.holdings],
             "debate": [
                 f"{m.sender} → {m.recipient}：{m.content}"
@@ -335,6 +353,7 @@ def allocate(scores: dict[str, float], caps: dict[str, float], budget: float) ->
 def _pos_dict(p: Position) -> dict:
     return {
         "ticker": p.ticker,
+        "currency": currency_of(p.ticker),
         "score": p.score,
         "weight": p.weight,
         "action": p.action,

@@ -39,6 +39,7 @@ class Config:
     short_term: list[str] = field(default_factory=list)
     risk: RiskLimits = field(default_factory=RiskLimits)
     holdings: dict[str, Holding] = field(default_factory=dict)
+    names: dict[str, str] = field(default_factory=dict)  # display names, e.g. 6920.T -> Lasertec
 
 
 def load_config(path: str | Path = "watchlist.toml") -> Config:
@@ -48,4 +49,5 @@ def load_config(path: str | Path = "watchlist.toml") -> Config:
     holdings = {t: Holding(**h) for t, h in data.get("holdings", {}).items()}
     # Anything held is always analyzed; unlisted holdings default to the long-term group.
     long_term += [t for t in holdings if t not in long_term and t not in short_term]
-    return Config(long_term, short_term, RiskLimits(**data.get("risk", {})), holdings)
+    names = dict(data.get("names", {}))
+    return Config(long_term, short_term, RiskLimits(**data.get("risk", {})), holdings, names)
