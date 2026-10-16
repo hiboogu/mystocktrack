@@ -4,7 +4,7 @@
 [long_term]
 # 長期配置：目前沒有持股、想持續觀察的標的
 # 日股用東京證交所代號加 .T，價格以日圓計
-tickers = ["NVDA", "AMD", "HON", "TRMB", "IOT", "6920.T", "6861.T"]
+tickers = ["NVDA", "AMD", "HON", "TRMB", "IOT", "6920.T", "6861.T", "5803.T"]
 
 [short_term]
 # 比特幣相關資產，短線進出
@@ -14,6 +14,7 @@ tickers = ["MSTR"]
 # 報告顯示用的名稱
 "6920.T" = "Lasertec"
 "6861.T" = "Keyence"
+"5803.T" = "Fujikura"
 
 [holdings]
 # 目前持股：cost = 平均買進成本（美元／股），shares = 股數
