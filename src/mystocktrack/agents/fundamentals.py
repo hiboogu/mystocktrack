@@ -15,7 +15,12 @@ class FundamentalsAnalyst(AnalystAgent):
     )
 
     def evidence(self, snap: Snapshot) -> dict:
-        return {"ticker": snap.ticker, "fundamentals": snap.fundamentals, "metrics": snap.metrics()}
+        return {
+            "ticker": snap.ticker,
+            "currency": snap.currency,  # freeCashflow and marketCap are in this currency
+            "fundamentals": snap.fundamentals,
+            "metrics": snap.metrics(),
+        }
 
     def rule_view(self, snap: Snapshot, context: dict) -> View:
         f = snap.fundamentals

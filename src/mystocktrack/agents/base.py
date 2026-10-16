@@ -79,7 +79,8 @@ class AnalystAgent:
         raise NotImplementedError
 
     def evidence(self, snap: Snapshot) -> dict:
-        return {"ticker": snap.ticker, "metrics": snap.metrics()}
+        # Prices and money amounts are in the listing currency (JPY for Tokyo stocks).
+        return {"ticker": snap.ticker, "currency": snap.currency, "metrics": snap.metrics()}
 
     def analyze(self, snapshots: dict[str, Snapshot], context: dict, lead: str) -> dict[str, View]:
         self.market = context.get("summary", {})

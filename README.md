@@ -45,6 +45,8 @@ mystocktrack run --offline          # 強制不呼叫 Claude
 
 刻意的題材投機可以在持股加上 `speculative = true`（可再填 `catalyst` 與 `review_by`）。這類持股不依長期基本面規則出場，只看三件事：占持股總值是否超過 `speculative_max_weight`、虧損是否達到 `speculative_max_loss` 的硬停損、檢討日是否已過。
 
+日股可以直接加進 `tickers`，用東京證交所代號加 `.T`（例如 Lasertec 是 `6920.T`），也可以在 `[names]` 幫代號取顯示名稱。日股的價格與金額都以日圓計；有日股時，總經分析師會改看日經 225 與美元兌日圓匯率，並說明匯率對以美元計報酬的影響。
+
 ## 自動化測試與部署
 
 - `.github/workflows/ci.yml`：每次 push 與 PR 在 Python 3.11–3.13 跑 `ruff` 與 `pytest`。測試全部用合成資料，不連網、不呼叫 Claude。
