@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..data import Snapshot
+from ..financials import brief
 from .base import AnalystAgent, View, clamp
 
 
@@ -20,6 +21,8 @@ class FundamentalsAnalyst(AnalystAgent):
             "currency": snap.currency,  # freeCashflow and marketCap are in this currency
             "fundamentals": snap.fundamentals,
             "metrics": snap.metrics(),
+            # Last 3 fiscal years, last quarter's EPS vs consensus, estimates, next earnings date.
+            "financials": brief(snap.financials),
         }
 
     def rule_view(self, snap: Snapshot, context: dict) -> View:
@@ -68,6 +71,20 @@ class FundamentalsAnalyst(AnalystAgent):
         fcf = f.get("freeCashflow")
         if fcf is not None:
             add(0.1 if fcf > 0 else -0.2, "自由現金流為正" if fcf > 0 else "自由現金流為負")
+
+        fin = snap.financials
+        streak = fin.get("beat_streak", 0)
+        if streak >= 3:
+            add(0.1, f"連續 {streak} 季 EPS 優於共識")
+        elif streak <= -2:
+            add(-0.1, f"連續 {-streak} 季 EPS 低於共識")
+        nxt = (fin.get("estimates") or {}).get("+1y") or {}
+        g = nxt.get("eps_growth")
+        if g is not None:
+            if g > 0.15:
+                add(0.1, f"共識預估明年 EPS 成長 {g:.0%}")
+            elif g < 0:
+                add(-0.1, f"共識預估明年 EPS 衰退 {g:.0%}")
 
         rationale = "、".join(notes) + "。" if notes else "基本面資料不足，暫持中立。"
         return View(snap.ticker, round(clamp(score), 4), rationale)
