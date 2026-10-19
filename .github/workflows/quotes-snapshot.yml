@@ -1,0 +1,26 @@
+name: Quotes snapshot (temporary)
+on:
+  push:
+    branches: [claude/project-thread-711stt]
+jobs:
+  quotes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install yfinance pandas
+      - run: |
+          python - <<'PY'
+          import yfinance as yf, pandas as pd
+          t = "^GSPC ^IXIC ^DJI ^RUT ^SOX ^VIX ^TNX BTC-USD KBR MSTR PATH CRNC SOUN OWLS INTC NVDA AMD HON TRMB IOT NBIS CRWV".split()
+          pd.set_option("display.width", 250)
+          for s in t:
+              h = yf.Ticker(s).history(period="10d", interval="1d", auto_adjust=False)
+              if h.empty: print(s, "NO DATA"); continue
+              h = h[["Open","High","Low","Close","Volume"]].tail(3)
+              print("=== " + s); print(h.round(3).to_string())
+          for s in ["NVDA","INTC","NBIS","CRWV"]:
+              m = yf.Ticker(s).history(period="1d", interval="30m", prepost=False)
+              print("=== 30m " + s); print(m[["Open","High","Low","Close","Volume"]].round(2).to_string())
+          PY
