@@ -8,7 +8,8 @@ from dataclasses import asdict
 
 from .agents import Recommendation
 from .data import market_of
-from .financials import ESTIMATE_PERIODS
+from .financials import ANNUAL_YEARS, ESTIMATE_PERIODS
+from .valuation import METHOD_NAMES, RATING_TABLE
 
 AGENT_TITLES = {
     "portfolio_manager": "投資組合經理",
@@ -104,6 +105,9 @@ def to_markdown(rec: Recommendation) -> str:
         if any(h.speculative for h in rec.holdings):
             lines.append("")
 
+    if rec.valuations:
+        lines += ratings_section(rec)
+
     lines += [
         "## 美股長期配置（含觀察名單）",
         "",
@@ -169,6 +173,79 @@ def _pct(x: float | None) -> str:
     return NO_DATA if x is None else f"{x:+.1%}"
 
 
+def _x(m: float | None) -> str:
+    return NO_DATA if m is None else f"{m:.1f} 倍"
+
+
+def _prior(v: dict, key: str, fmt: str = "{}") -> str:
+    p = v.get("prior") or {}
+    if p.get(key) is None:
+        return "—"
+    return fmt.format(p[key]) + (f"（{p['date']}）" if key == "rating" and p.get("date") else "")
+
+
+def ratings_section(rec: Recommendation) -> list[str]:
+    """Summary table of ratings and 6-month targets, plus the rating definitions."""
+    held = [h.ticker for h in rec.holdings]
+    order = [*(t for t in held if t in rec.valuations)]
+    order += [t for t in rec.valuations if t not in order]
+    lines = [
+        "## 評等與目標價（6 個月）",
+        "",
+        "| 標的 | 評等 | 前次評等 | 現價 | 目標價 | 前次目標價 | 潛在漲跌 | 方法 | 目前倍數 | 歷史區間（20／50／80 百分位） | 悲觀／基本／樂觀 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for t in order:
+        v = rec.valuations[t]
+        band = v.get("band")
+        band_txt = "／".join(f"{b:.1f}" for b in band) + " 倍" if band else NO_DATA
+        scen = v.get("scenarios") or []
+        scen_txt = "／".join(f"{s['price']:,.2f}" for s in scen) if scen else NO_DATA
+        lines.append(
+            f"| {label(t, rec.names)} | **{v['rating']}** | {_prior(v, 'rating')} | "
+            f"{_f(v.get('price'))} | {_f(v.get('target'))} | {_prior(v, 'target', '{:,.2f}')} | "
+            f"{_pct(v.get('upside'))} | {METHOD_NAMES.get(v.get('method'), '—')} | "
+            f"{_x(v.get('current_multiple'))} | "
+            f"{band_txt} | {scen_txt} |"
+        )
+    lines += [
+        "",
+        "評等以基本情境目標價的 6 個月預估報酬（目標價 ÷ 現價 − 1）決定："
+        + "、".join(f"{name} {rule}" for name, rule in RATING_TABLE)
+        + "。目標價由程式依各股自己的歷史倍數區間推算，不是分析師共識，各股推導見「財報與預期」。",
+        "",
+    ]
+    return lines
+
+
+def valuation_lines(v: dict, cur: str) -> list[str]:
+    if not v.get("method"):
+        return [f"- 估值：{v['rating']}，{v.get('note') or NO_DATA}"]
+    name = METHOD_NAMES[v["method"]]
+    unit = "EPS" if v["method"] == "PE" else "每股營收"
+    p20, p50, p80 = v["band"]
+    out = [
+        f"- 估值方法：{name}。{v['method_reason']}。",
+        f"- 歷史區間：{v['band_period']} 共 {v['band_months']} 個月，以{v['band_basis']}計算，"
+        f"20／50／80 百分位為 {p20:.1f}／{p50:.1f}／{p80:.1f} 倍；{v['multiple_reason']}。",
+        f"- 目標價 ＝ {v['multiple']:.1f} 倍 × 6 個月後的近四季{unit} {v['metric_6m']:,.2f} {cur}"
+        f"（現在 {v['metric_now']:,.2f}，取現在與未來 12 個月共識的中間）＝ {v['target']:,.2f}，"
+        f"潛在漲跌 {_pct(v['upside'])}，評等 **{v['rating']}**。",
+    ]
+    for s in v.get("scenarios") or []:
+        out.append(
+            f"  - {s['name']}：{s['multiple']:.1f} 倍 × {s['metric']:,.2f} ＝ {s['price']:,.2f}"
+            f"（{_pct(s['upside'])}），{s['trigger']}"
+        )
+    c = v.get("cross_check")
+    if c:
+        out.append(
+            f"- 交叉驗證（{METHOD_NAMES[c['method']]}，{c['multiple']:.1f} 倍）：目標 "
+            f"{c['target']:,.2f}，潛在漲跌 {_pct(c['upside'])}"
+        )
+    return out
+
+
 def earnings_section(rec: Recommendation) -> list[str]:
     """Per stock: 3 fiscal years of key figures, last quarter vs consensus, estimates, next date."""
     held = [h.ticker for h in rec.holdings]
@@ -191,7 +268,7 @@ def earnings_section(rec: Recommendation) -> list[str]:
             lines += [f"{NO_DATA}：Yahoo 沒有這檔的財報與預估資料。", ""]
             continue
         cur = fin.get("currency") or "USD"
-        annual = list(reversed(fin.get("annual") or []))
+        annual = list(reversed((fin.get("annual") or [])[:ANNUAL_YEARS]))
         if annual:
             lines += [
                 f"重要營運數據（金額單位：{_unit(cur)}；每股數字單位：{cur}）",
@@ -201,9 +278,9 @@ def earnings_section(rec: Recommendation) -> list[str]:
             ]
             for r in annual:
                 lines.append(
-                    f"| {r['period']} | {_money(r['revenue'], cur)} | {_pct(r.get('revenue_yoy'))} | "
-                    f"{_f(r['revenue_per_share'])} | {_f(r['eps'])} | {_money(r['fcf'], cur)} | "
-                    f"{_money(r['capex'], cur)} |"
+                    f"| {r['period']} | {_money(r.get('revenue'), cur)} | {_pct(r.get('revenue_yoy'))} | "
+                    f"{_f(r.get('revenue_per_share'))} | {_f(r.get('eps'))} | {_money(r.get('fcf'), cur)} | "
+                    f"{_money(r.get('capex'), cur)} |"
                 )
             lines.append("")
         else:
@@ -246,7 +323,10 @@ def earnings_section(rec: Recommendation) -> list[str]:
         if not est:
             lines.append(f"- 共識預估：{NO_DATA}")
         nxt = fin.get("next_earnings") or f"{NO_DATA}（Yahoo 尚未公布下一次日期）"
-        lines += [f"- 下次財報日：{nxt}", ""]
+        lines.append(f"- 下次財報日：{nxt}")
+        if t in rec.valuations:
+            lines += valuation_lines(rec.valuations[t], cur)
+        lines.append("")
     return lines
 
 
