@@ -65,6 +65,7 @@ class Valuation:
     multiple_reason: str = ""
     metric_now: float | None = None
     metric_6m: float | None = None
+    metric_6m_basis: str = ""
     target: float | None = None
     upside: float | None = None
     scenarios: list[Scenario] = field(default_factory=list)
@@ -141,12 +142,18 @@ def forward_12m(est: dict, key: str, last_fy_end: date | None, today: date) -> f
 
 
 def _pick_multiple(current: float, band: tuple[float, float, float]) -> tuple[float, str]:
-    p20, p50, _ = band
+    """Base case never assumes re-rating up; an expensive stock gives back half its premium."""
+    _, p50, _ = band
     if current > p50:
-        return p50, f"目前 {current:.1f} 倍高於歷史中位數，基本情境假設回到中位數 {p50:.1f} 倍"
-    if current < p20:
-        return p20, f"目前 {current:.1f} 倍低於歷史 20 百分位，基本情境假設回到下緣 {p20:.1f} 倍"
-    return current, f"目前 {current:.1f} 倍在歷史區間內，基本情境假設倍數不變，報酬只來自獲利成長"
+        m = (current + p50) / 2
+        return m, (
+            f"目前 {current:.1f} 倍高於歷史中位數 {p50:.1f} 倍，基本情境假設 6 個月內回吐一半溢價，"
+            f"取 {m:.1f} 倍"
+        )
+    return (
+        current,
+        f"目前 {current:.1f} 倍不高於歷史中位數，基本情境假設倍數不變，報酬只來自獲利成長",
+    )
 
 
 def _scenarios(base_m, band, metrics, price, label) -> list[Scenario]:
@@ -167,17 +174,43 @@ def _scenarios(base_m, band, metrics, price, label) -> list[Scenario]:
     return out
 
 
+SCENARIO_KEYS = (("low", "_low"), ("avg", ""), ("high", "_high"))
+
+
+def six_month_metric(now, last_two, quarter_est: dict, fwd12: dict) -> tuple[dict, str]:
+    """The trailing-four-quarter figure expected six months from now, per scenario.
+
+    Best: the last two reported quarters plus consensus for this and next quarter. Otherwise
+    the geometric mean of today's trailing figure and the next-12-month consensus.
+    """
+    out = {}
+    q0, q1 = quarter_est.get("0q") or {}, quarter_est.get("+1q") or {}
+    if last_two is not None and q0.get("avg") is not None and q1.get("avg") is not None:
+        for k, _ in SCENARIO_KEYS:
+            a = q0.get(k) if q0.get(k) is not None else q0["avg"]
+            b = q1.get(k) if q1.get(k) is not None else q1["avg"]
+            out[k] = last_two + a + b
+        return out, "最近 2 季實際＋本季與下一季共識"
+    if now is None or fwd12.get("avg") is None:
+        return {}, ""
+    for k, _ in SCENARIO_KEYS:
+        f = fwd12.get(k) if fwd12.get(k) is not None else fwd12["avg"]
+        out[k] = (now * f) ** 0.5 if now > 0 and f > 0 else (now + f) / 2
+    return out, "現在與未來 12 個月共識的幾何平均"
+
+
 def _method(
     kind: str,
     price: float,
     now: float | None,
-    fwd: dict,
+    six: dict,
+    six_basis: str,
     series,
     monthly,
     basis: str,
 ) -> dict | None:
     """Everything for one method, or None when its data is too thin."""
-    if not now or now <= 0 or fwd.get("avg") is None or fwd["avg"] <= 0:
+    if not now or now <= 0 or six.get("avg") is None or six["avg"] <= 0:
         return None
     multiples, months, losses = band_multiples(monthly, series)
     if len(multiples) < MIN_BAND_MONTHS:
@@ -187,10 +220,6 @@ def _method(
     band = tuple(round(percentile(multiples, q), 2) for q in (0.2, 0.5, 0.8))
     current = price / now
     base_m, why = _pick_multiple(current, band)
-    six = {
-        k: 0.5 * now + 0.5 * (fwd.get(k) if fwd.get(k) is not None else fwd["avg"])
-        for k in ("low", "avg", "high")
-    }
     label = "EPS" if kind == "PE" else "營收"
     scen = _scenarios(base_m, band, six, price, label)
     return {
@@ -204,11 +233,18 @@ def _method(
         "multiple_reason": why,
         "metric_now": round(now, 4),
         "metric_6m": round(six["avg"], 4),
+        "metric_6m_basis": six_basis,
         "target": scen[1].price,
         "upside": scen[1].upside,
         "scenarios": scen,
         "losses": losses,
     }
+
+
+def _keys(row: dict | None, prefix: str) -> dict:
+    """{"low", "avg", "high"} from an estimates row's eps/eps_low/eps_high style keys."""
+    row = row or {}
+    return {k: row.get(f"{prefix}{s}") for k, s in SCENARIO_KEYS}
 
 
 def value(snap, today: date | None = None, speculative: bool = False) -> Valuation:
@@ -234,11 +270,12 @@ def value(snap, today: date | None = None, speculative: bool = False) -> Valuati
     if len(series) < 4:
         series, basis = annual_series(annual, "eps"), "年度 EPS"
     eps_now = series[-1][1] if series else None
-    eps_fwd = {
-        k: forward_12m(est, f"eps{s}", last_fy, today)
-        for k, s in (("low", "_low"), ("avg", ""), ("high", "_high"))
-    }
-    pe = _method("PE", price, eps_now, eps_fwd, series, monthly, basis)
+    hist = fin.get("eps_history") or []
+    eps_last_two = sum(q["eps"] for q in hist[-2:]) if basis.startswith("近四季") else None
+    eps_q = {c: _keys(est.get(c), "eps") for c in ("0q", "+1q")}
+    eps_fwd = {k: forward_12m(est, f"eps{s}", last_fy, today) for k, s in SCENARIO_KEYS}
+    eps_six, eps_how = six_month_metric(eps_now, eps_last_two, eps_q, eps_fwd)
+    pe = _method("PE", price, eps_now, eps_six, eps_how, series, monthly, basis)
 
     # Price/sales on revenue per share; shares from the last annual report.
     shares = None
@@ -248,16 +285,21 @@ def value(snap, today: date | None = None, speculative: bool = False) -> Valuati
     rps_now = sum(q["revenue_per_share"] for q in quarters[:4]) if len(quarters) >= 4 else None
     if rps_now is None and annual:
         rps_now = annual[0].get("revenue_per_share")
-    rev_fwd = {}
+    rps_six, rps_how = {}, ""
     if shares:
-        for k, s in (("low", "_low"), ("avg", ""), ("high", "_high")):
-            f = forward_12m(est, f"revenue{s}", last_fy, today)
-            rev_fwd[k] = None if f is None else f / shares
+        per_share = lambda d: {k: (v / shares if v is not None else None) for k, v in d.items()}  # noqa: E731
+        rev_q = {c: per_share(_keys(est.get(c), "revenue")) for c in ("0q", "+1q")}
+        rev_fwd = per_share(
+            {k: forward_12m(est, f"revenue{s}", last_fy, today) for k, s in SCENARIO_KEYS}
+        )
+        last_two = sum(q["revenue_per_share"] for q in quarters[:2]) if len(quarters) >= 2 else None
+        rps_six, rps_how = six_month_metric(rps_now, last_two, rev_q, rev_fwd)
     ps = _method(
         "PS",
         price,
         rps_now,
-        rev_fwd,
+        rps_six,
+        rps_how,
         annual_series(annual, "revenue_per_share"),
         monthly,
         "年度每股營收",
@@ -265,7 +307,7 @@ def value(snap, today: date | None = None, speculative: bool = False) -> Valuati
 
     if pe:
         chosen, other = pe, ps
-        reason = f"{basis}在區間內大多為正，獲利可用，採本益比"
+        reason = f"{basis} 在歷史期間大多為正，採本益比"
     elif ps:
         chosen, other = ps, None
         why = (

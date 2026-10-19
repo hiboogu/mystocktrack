@@ -226,10 +226,10 @@ def valuation_lines(v: dict, cur: str) -> list[str]:
     p20, p50, p80 = v["band"]
     out = [
         f"- 估值方法：{name}。{v['method_reason']}。",
-        f"- 歷史區間：{v['band_period']} 共 {v['band_months']} 個月，以{v['band_basis']}計算，"
+        f"- 歷史區間：{v['band_period']} 共 {v['band_months']} 個月（依據：{v['band_basis']}），"
         f"20／50／80 百分位為 {p20:.1f}／{p50:.1f}／{p80:.1f} 倍；{v['multiple_reason']}。",
-        f"- 目標價 ＝ {v['multiple']:.1f} 倍 × 6 個月後的近四季{unit} {v['metric_6m']:,.2f} {cur}"
-        f"（現在 {v['metric_now']:,.2f}，取現在與未來 12 個月共識的中間）＝ {v['target']:,.2f}，"
+        f"- 目標價 ＝ {v['multiple']:.1f} 倍 × 6 個月後的近四季 {unit} {v['metric_6m']:,.2f} {cur}"
+        f"（{v['metric_6m_basis']}；現在 {v['metric_now']:,.2f}）＝ {v['target']:,.2f}，"
         f"潛在漲跌 {_pct(v['upside'])}，評等 **{v['rating']}**。",
     ]
     for s in v.get("scenarios") or []:
@@ -326,6 +326,8 @@ def earnings_section(rec: Recommendation) -> list[str]:
         lines.append(f"- 下次財報日：{nxt}")
         if t in rec.valuations:
             lines += valuation_lines(rec.valuations[t], cur)
+        elif t in {p.ticker for p in rec.short_term}:
+            lines.append("- 估值：比特幣連動的短線部位，不用倍數估值，看比特幣走勢與停損。")
         lines.append("")
     return lines
 

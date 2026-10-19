@@ -83,11 +83,27 @@ def test_pe_band_target_and_scenarios():
     assert v.rating == val.rating_for(v.upside)
 
 
-def test_expensive_stock_reverts_to_median_and_is_downgraded():
+def test_expensive_stock_gives_back_half_its_premium():
     fin = financials([1.0] * 27, est_eps=(4.0, 4.0))
     v = val.value(snap(200.0, fin), TODAY)  # 50x against a 20x history
-    assert v.multiple == v.band[1]
+    assert v.multiple == round((v.current_multiple + v.band[1]) / 2, 2)
     assert v.rating == "降低持股"
+
+
+def test_cheap_stock_keeps_its_multiple():
+    fin = financials([1.0] * 27, est_eps=(4.0, 4.0))
+    v = val.value(snap(40.0, fin), TODAY)  # 10x against a 20x history
+    assert v.multiple == v.current_multiple == 10.0
+    assert v.scenarios[2].multiple > v.multiple  # only the bull case re-rates
+
+
+def test_six_month_metric_prefers_quarterly_consensus():
+    q = {"0q": {"low": 0.9, "avg": 1.0, "high": 1.1}, "+1q": {"low": 1.0, "avg": 1.2, "high": 1.3}}
+    six, how = val.six_month_metric(3.0, 1.6, q, {"avg": 5.0})
+    assert six["avg"] == 1.6 + 1.0 + 1.2 and six["low"] == 1.6 + 0.9 + 1.0
+    assert "共識" in how
+    six, how = val.six_month_metric(4.0, None, {}, {"avg": 9.0, "low": 4.0})
+    assert six["avg"] == 6.0 and six["low"] == 4.0 and "幾何平均" in how
 
 
 def test_loss_maker_falls_back_to_price_sales():
