@@ -114,6 +114,16 @@ def test_estimates_and_next_earnings():
     cal = {"Earnings Date": [date(2020, 1, 1), date(2026, 11, 18)]}
     assert fin.next_earnings(cal, today=date(2026, 10, 19)) == "2026-11-18"
     assert fin.next_earnings({}, today=date(2026, 10, 19)) is None
+    past = {"Earnings Date": [date(2026, 8, 21)]}
+    assert fin.next_earnings(past, today=date(2026, 10, 19)) is None
+
+
+def test_revenue_growth_recomputed_from_reported_year():
+    annual = fin.statement_rows(income(), cashflow())
+    e = fin.estimates(eps_estimate(), revenue_estimate(), annual)
+    assert round(e["0y"]["revenue_growth"], 4) == round(1400 / 1200 - 1, 4)
+    assert round(e["+1y"]["revenue_growth"], 4) == round(1650 / 1400 - 1, 4)
+    assert e["0q"]["revenue_growth"] == 0.3  # quarters keep Yahoo's figure
 
 
 def test_fetch_survives_missing_endpoints():
@@ -140,6 +150,6 @@ def test_report_shows_earnings_and_marks_missing(snapshots, config, provider):
     assert "## 財報與預期" in md
     assert "| 2025-12-31 | 1,200 | +20.0% | 12.00 | 2.40 | 200 | -50 |" in md
     assert "EPS 實際 0.66，共識 0.62，差異 +6.5%；連續 3 季優於共識" in md
-    assert "共識下一年度：EPS 3.40（YoY +21.0%）" in md
+    assert "共識下一年度：EPS 3.40（YoY +21.0%），營收 1,650（百萬美元，YoY +17.9%）" in md
     assert "下次財報日：2099-02-01" in md
     assert "### JUNK\n\n資料不足" in md

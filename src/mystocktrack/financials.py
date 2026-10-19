@@ -136,8 +136,12 @@ def _period(df, code: str) -> dict:
     return dict(df.loc[code].items())
 
 
-def estimates(eps_est, rev_est) -> dict:
-    """Consensus for this/next quarter and fiscal year, keyed by Yahoo's period codes."""
+def estimates(eps_est, rev_est, annual: list[dict] | None = None) -> dict:
+    """Consensus for this/next quarter and fiscal year, keyed by Yahoo's period codes.
+
+    Yahoo's year-ago revenue is unreliable for Tokyo stocks, so fiscal-year revenue growth
+    is recomputed from the last reported year (and this year's consensus) when available.
+    """
     out = {}
     for code in ESTIMATE_PERIODS:
         e = _period(eps_est, code)
@@ -154,6 +158,10 @@ def estimates(eps_est, rev_est) -> dict:
         }
         if any(v is not None for v in row.values()):
             out[code] = row
+    base = (annual or [{}])[0].get("revenue")
+    for code, prior in (("0y", base), ("+1y", out.get("0y", {}).get("revenue"))):
+        if code in out and out[code]["revenue"] is not None and prior:
+            out[code]["revenue_growth"] = _growth(out[code]["revenue"], prior)
     return out
 
 
@@ -167,9 +175,9 @@ def next_earnings(calendar, today: date | None = None) -> str | None:
     if not isinstance(dates, list | tuple):
         dates = [dates]
     today = today or date.today()
-    days = sorted(d for d in (_day(x) for x in dates) if d)
-    upcoming = [d for d in days if d >= today.isoformat()]
-    return (upcoming or days or [None])[0]
+    # A past date means Yahoo has not posted the next one yet; better blank than stale.
+    upcoming = sorted(d for d in (_day(x) for x in dates) if d and d >= today.isoformat())
+    return upcoming[0] if upcoming else None
 
 
 def fetch(ticker_obj, currency: str | None = None) -> dict:
@@ -182,13 +190,14 @@ def fetch(ticker_obj, currency: str | None = None) -> dict:
             return None
 
     surprises = eps_surprises(get("earnings_history"))
+    annual = statement_rows(get("income_stmt"), get("cashflow"), ANNUAL_YEARS)
     return {
         "currency": currency,
-        "annual": statement_rows(get("income_stmt"), get("cashflow"), ANNUAL_YEARS),
+        "annual": annual,
         "quarters": statement_rows(get("quarterly_income_stmt"), None, QUARTERS, quarterly=True),
         "eps_surprises": surprises,
         "beat_streak": beat_streak(surprises),
-        "estimates": estimates(get("earnings_estimate"), get("revenue_estimate")),
+        "estimates": estimates(get("earnings_estimate"), get("revenue_estimate"), annual),
         "next_earnings": next_earnings(get("calendar")),
     }
 

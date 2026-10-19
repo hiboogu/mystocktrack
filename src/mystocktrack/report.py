@@ -225,7 +225,8 @@ def earnings_section(rec: Recommendation) -> list[str]:
             )
         else:
             lines.append(f"- 最近一季 EPS vs 共識：{NO_DATA}")
-        q = (fin.get("quarters") or [None])[0]
+        # Tokyo stocks often have a newest quarter with only EPS filled in; skip to one with revenue.
+        q = next((r for r in fin.get("quarters") or [] if r.get("revenue") is not None), None)
         if q:
             lines.append(
                 f"- 最近一季（{q['period']}）營收 {_money(q['revenue'], cur)}（{_unit(cur)}，"
@@ -244,7 +245,8 @@ def earnings_section(rec: Recommendation) -> list[str]:
             )
         if not est:
             lines.append(f"- 共識預估：{NO_DATA}")
-        lines += [f"- 下次財報日：{fin.get('next_earnings') or NO_DATA}", ""]
+        nxt = fin.get("next_earnings") or f"{NO_DATA}（Yahoo 尚未公布下一次日期）"
+        lines += [f"- 下次財報日：{nxt}", ""]
     return lines
 
 
