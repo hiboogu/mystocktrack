@@ -8,6 +8,7 @@ from dataclasses import asdict
 
 from .agents import Recommendation
 from .data import market_of
+from .financials import ESTIMATE_PERIODS
 
 AGENT_TITLES = {
     "portfolio_manager": "投資組合經理",
@@ -132,6 +133,9 @@ def to_markdown(rec: Recommendation) -> str:
     if rec.skipped:
         lines += [f"資料抓取失敗、本次略過：{', '.join(rec.skipped)}", ""]
 
+    if rec.financials or rec.holdings or rec.long_term:
+        lines += earnings_section(rec)
+
     lines += ["## 角色對話紀錄", ""]
     for m in rec.transcript:
         lines.append(
@@ -139,6 +143,111 @@ def to_markdown(rec: Recommendation) -> str:
             f"{m.content}"
         )
     return "\n".join(lines) + "\n"
+
+
+NO_DATA = "資料不足"
+
+
+def _money(x: float | None, currency: str) -> str:
+    """Large amounts in millions (USD) or 億 (JPY), per the report standard's unit rule."""
+    if x is None:
+        return NO_DATA
+    if currency == "JPY":
+        return f"{x / 1e8:,.0f}"
+    return f"{x / 1e6:,.0f}"
+
+
+def _unit(currency: str) -> str:
+    return "億日圓" if currency == "JPY" else f"百萬{'美元' if currency == 'USD' else currency}"
+
+
+def _f(x: float | None, fmt: str = "{:,.2f}") -> str:
+    return NO_DATA if x is None else fmt.format(x)
+
+
+def _pct(x: float | None) -> str:
+    return NO_DATA if x is None else f"{x:+.1%}"
+
+
+def earnings_section(rec: Recommendation) -> list[str]:
+    """Per stock: 3 fiscal years of key figures, last quarter vs consensus, estimates, next date."""
+    held = [h.ticker for h in rec.holdings]
+    order = [*held, *(p.ticker for p in rec.long_term if p.ticker not in held)]
+    order += [
+        p.ticker for p in rec.short_term if p.ticker in rec.financials and p.ticker not in order
+    ]
+    lines = [
+        "## 財報與預期",
+        "",
+        "資料來源：Yahoo Finance（yfinance）。財報日以公司官方公告為準；"
+        "「資料不足」表示 Yahoo 沒有提供該項（ETF、虧損公司或日股常見）。",
+        "",
+    ]
+    for t in order:
+        fin = rec.financials.get(t)
+        lines.append(f"### {label(t, rec.names)}")
+        lines.append("")
+        if not fin:
+            lines += [f"{NO_DATA}：Yahoo 沒有這檔的財報與預估資料。", ""]
+            continue
+        cur = fin.get("currency") or "USD"
+        annual = list(reversed(fin.get("annual") or []))
+        if annual:
+            lines += [
+                f"重要營運數據（金額單位：{_unit(cur)}；每股數字單位：{cur}）",
+                "",
+                "| 會計年度 | 營收 | 營收 YoY | 每股營收 | EPS | 自由現金流 | 資本支出 |",
+                "|---|---|---|---|---|---|---|",
+            ]
+            for r in annual:
+                lines.append(
+                    f"| {r['period']} | {_money(r['revenue'], cur)} | {_pct(r.get('revenue_yoy'))} | "
+                    f"{_f(r['revenue_per_share'])} | {_f(r['eps'])} | {_money(r['fcf'], cur)} | "
+                    f"{_money(r['capex'], cur)} |"
+                )
+            lines.append("")
+        else:
+            lines += [f"- 年度財報：{NO_DATA}", ""]
+
+        s = (fin.get("eps_surprises") or [None])[0]
+        if s:
+            streak = fin.get("beat_streak", 0)
+            tail = (
+                f"；連續 {streak} 季優於共識"
+                if streak > 1
+                else f"；連續 {-streak} 季低於共識"
+                if streak < -1
+                else ""
+            )
+            lines.append(
+                f"- 最近一季（{s['period']}）EPS 實際 {_f(s['actual'])}，共識 {_f(s['estimate'])}，"
+                f"差異 {_pct(s['surprise'])}{tail}"
+            )
+        else:
+            lines.append(f"- 最近一季 EPS vs 共識：{NO_DATA}")
+        # Tokyo stocks often have a newest quarter with only EPS filled in; skip to one with revenue.
+        q = next((r for r in fin.get("quarters") or [] if r.get("revenue") is not None), None)
+        if q:
+            lines.append(
+                f"- 最近一季（{q['period']}）營收 {_money(q['revenue'], cur)}（{_unit(cur)}，"
+                f"YoY {_pct(q.get('revenue_yoy'))}），毛利率 {_f(q['gross_margin'], '{:.1%}')}，"
+                f"營益率 {_f(q['operating_margin'], '{:.1%}')}"
+            )
+        est = fin.get("estimates") or {}
+        for code in ("0q", "0y", "+1y"):
+            e = est.get(code)
+            if not e:
+                continue
+            n = f"，{e['analysts']:.0f} 位分析師" if e.get("analysts") else ""
+            lines.append(
+                f"- 共識{ESTIMATE_PERIODS[code]}：EPS {_f(e['eps'])}（YoY {_pct(e.get('eps_growth'))}），"
+                f"營收 {_money(e['revenue'], cur)}（{_unit(cur)}，YoY {_pct(e.get('revenue_growth'))}）{n}"
+            )
+        if not est:
+            lines.append(f"- 共識預估：{NO_DATA}")
+        nxt = fin.get("next_earnings") or f"{NO_DATA}（Yahoo 尚未公布下一次日期）"
+        lines += [f"- 下次財報日：{nxt}", ""]
+    return lines
 
 
 def to_html(markdown_text: str, title: str) -> str:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from . import financials
 from . import indicators as ind
 
 MACRO_TICKERS = {"spx": "^GSPC", "vix": "^VIX", "tnx": "^TNX"}
@@ -35,6 +36,7 @@ FUNDAMENTAL_FIELDS = (
     "marketCap",
     "dividendYield",
     "quoteType",
+    "financialCurrency",
 )
 
 
@@ -43,6 +45,8 @@ class Snapshot:
     ticker: str
     closes: list[float]
     fundamentals: dict = field(default_factory=dict)
+    # Statements, EPS surprises, consensus and next earnings date; see financials.fetch.
+    financials: dict = field(default_factory=dict)
 
     @property
     def price(self) -> float:
@@ -92,10 +96,12 @@ class StaticDataProvider:
 
 
 class YahooDataProvider:
-    """Daily closes (about 13 months) and key fundamentals from Yahoo Finance via yfinance."""
+    """Daily closes (about 13 months), key fundamentals and, for stocks, financial statements
+    and consensus estimates from Yahoo Finance via yfinance."""
 
-    def __init__(self, period: str = "13mo"):
+    def __init__(self, period: str = "13mo", with_financials: bool = True):
         self.period = period
+        self.with_financials = with_financials
 
     def snapshot(self, ticker: str) -> Snapshot:
         import yfinance as yf
@@ -109,4 +115,9 @@ class YahooDataProvider:
             info = t.info or {}
         except Exception:  # Yahoo's info endpoint is flaky; prices alone still work.
             info = {}
-        return Snapshot(ticker, closes, {k: info.get(k) for k in FUNDAMENTAL_FIELDS})
+        fundamentals = {k: info.get(k) for k in FUNDAMENTAL_FIELDS}
+        fin = {}
+        # Indices, FX, crypto and ETFs have no statements; skip the extra requests.
+        if self.with_financials and info.get("quoteType") == "EQUITY":
+            fin = financials.fetch(t, info.get("financialCurrency") or currency_of(ticker))
+        return Snapshot(ticker, closes, fundamentals, fin)

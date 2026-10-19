@@ -19,6 +19,7 @@ from ..data import (
     currency_of,
     market_of,
 )
+from ..financials import brief
 from ..llm import LLM
 from .base import AnalystAgent
 from .crypto_trader import CryptoTrader
@@ -73,6 +74,8 @@ class Recommendation:
     skipped: list[str] = field(default_factory=list)
     holdings: list[HoldingReview] = field(default_factory=list)
     names: dict[str, str] = field(default_factory=dict)
+    # Per-ticker statements and estimates (financials.fetch output) for the report.
+    financials: dict[str, dict] = field(default_factory=dict)
     disclaimer: str = DISCLAIMER
 
 
@@ -176,6 +179,7 @@ class PortfolioManager:
             skipped=skipped,
             holdings=holdings,
             names=self.config.names,
+            financials={t: s.financials for t, s in all_snaps.items() if s.financials},
         )
         rec.narrative = self._narrative(rec)
         bus.send(self.name, BROADCAST, "decision", self._decision_line(rec))
@@ -284,6 +288,7 @@ class PortfolioManager:
             "cash": rec.cash,
             "holdings": [asdict(h) for h in rec.holdings],
             "names": rec.names,
+            "earnings": {t: brief(f) for t, f in rec.financials.items()},
             "watch_only": [p.ticker for p in rec.long_term if p.ticker not in self.config.holdings],
             "debate": [
                 f"{m.sender} → {m.recipient}：{m.content}"
