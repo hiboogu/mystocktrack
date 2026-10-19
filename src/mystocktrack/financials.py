@@ -11,6 +11,9 @@ import math
 from datetime import date, datetime
 
 ANNUAL_YEARS = 3
+# Yahoo keeps about 4 fiscal years; all of them feed the historical multiple band.
+ANNUAL_KEEP = 5
+EARNINGS_DATES = 28  # about 6 years of quarterly EPS for the P/E band
 QUARTERS = 5
 SURPRISES = 4
 ESTIMATE_PERIODS = {"0q": "本季", "+1q": "下一季", "0y": "本年度", "+1y": "下一年度"}
@@ -153,6 +156,8 @@ def estimates(eps_est, rev_est, annual: list[dict] | None = None) -> dict:
             "eps_year_ago": _num(e.get("yearAgoEps")),
             "eps_growth": _num(e.get("growth")),
             "revenue": _num(r.get("avg")),
+            "revenue_low": _num(r.get("low")),
+            "revenue_high": _num(r.get("high")),
             "revenue_growth": _num(r.get("growth")),
             "analysts": _num(e.get("numberOfAnalysts")),
         }
@@ -189,8 +194,14 @@ def fetch(ticker_obj, currency: str | None = None) -> dict:
         except Exception:  # Yahoo endpoints fail independently; keep whatever works.
             return None
 
+    def call(method, **kwargs):
+        try:
+            return getattr(ticker_obj, method)(**kwargs)
+        except Exception:
+            return None
+
     surprises = eps_surprises(get("earnings_history"))
-    annual = statement_rows(get("income_stmt"), get("cashflow"), ANNUAL_YEARS)
+    annual = statement_rows(get("income_stmt"), get("cashflow"), ANNUAL_KEEP)
     return {
         "currency": currency,
         "annual": annual,
@@ -199,7 +210,38 @@ def fetch(ticker_obj, currency: str | None = None) -> dict:
         "beat_streak": beat_streak(surprises),
         "estimates": estimates(get("earnings_estimate"), get("revenue_estimate"), annual),
         "next_earnings": next_earnings(get("calendar")),
+        "eps_history": eps_history(call("get_earnings_dates", limit=EARNINGS_DATES)),
+        "monthly_closes": monthly_closes(
+            call("history", period="5y", interval="1mo", auto_adjust=True)
+        ),
     }
+
+
+def eps_history(dates) -> list[dict]:
+    """Oldest-first reported quarterly EPS (Yahoo's adjusted figure) by announcement date."""
+    if _empty(dates):
+        return []
+    col = next((c for c in ("Reported EPS", "epsActual") if c in dates.columns), None)
+    if col is None:
+        return []
+    out = {}
+    for idx, v in dates[col].items():
+        eps, day = _num(v), _day(idx)
+        if eps is not None and day:
+            out[day] = eps  # duplicates (Yahoo lists some quarters twice) collapse here
+    return [{"date": d, "eps": e} for d, e in sorted(out.items())]
+
+
+def monthly_closes(hist) -> list[dict]:
+    """Oldest-first month-end closes, split-adjusted like the daily series."""
+    if _empty(hist) or "Close" not in hist.columns:
+        return []
+    out = []
+    for idx, v in hist["Close"].items():
+        close = _num(v)
+        if close is not None and close > 0:
+            out.append({"date": _day(idx), "close": close})
+    return out
 
 
 def brief(fin: dict) -> dict:

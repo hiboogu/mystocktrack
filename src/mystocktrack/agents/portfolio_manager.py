@@ -7,7 +7,7 @@ import logging
 from dataclasses import asdict, dataclass, field
 from datetime import date
 
-from .. import DISCLAIMER
+from .. import DISCLAIMER, valuation
 from .. import indicators as ind
 from ..bus import BROADCAST, Message, MessageBus
 from ..config import Config, RiskLimits
@@ -76,6 +76,8 @@ class Recommendation:
     names: dict[str, str] = field(default_factory=dict)
     # Per-ticker statements and estimates (financials.fetch output) for the report.
     financials: dict[str, dict] = field(default_factory=dict)
+    # Per-ticker valuation.Valuation as dicts; "prior" is filled from state/ratings.json.
+    valuations: dict[str, dict] = field(default_factory=dict)
     disclaimer: str = DISCLAIMER
 
 
@@ -87,7 +89,8 @@ class PortfolioManager:
         "使用者偏好：美股長期配置，比特幣相關資產短線進出。請用繁體中文寫給一般投資人看的"
         "投資建議摘要，先講結論，再逐一說明使用者目前持股（holdings）該續抱、加碼、減碼或停損"
         "及理由；speculative 為 true 的持股是使用者刻意的題材投機，請依部位上限、硬停損與催化劑"
-        "評論，不要用長期基本面標準要求出場。接著點評沒有持股的觀察名單，最後講風險並提醒這不是投資建議。"
+        "評論，不要用長期基本面標準要求出場。valuations 是依各股自己的歷史倍數區間推出的 6 個月"
+        "目標價與評等，提到目標價時要說明用的是本益比或股價營收比。接著點評沒有持股的觀察名單，最後講風險並提醒這不是投資建議。"
     )
 
     def __init__(self, data: DataProvider, config: Config, llm: LLM | None = None):
@@ -180,6 +183,7 @@ class PortfolioManager:
             holdings=holdings,
             names=self.config.names,
             financials={t: s.financials for t, s in all_snaps.items() if s.financials},
+            valuations=self._valuations(long_snaps),
         )
         rec.narrative = self._narrative(rec)
         bus.send(self.name, BROADCAST, "decision", self._decision_line(rec))
@@ -277,6 +281,15 @@ class PortfolioManager:
             )
         return sorted(reviews, key=lambda r: r.pnl_pct)
 
+    def _valuations(self, snaps: dict[str, Snapshot]) -> dict[str, dict]:
+        # Bitcoin-linked short-term names are judged on the BTC price, not on multiples.
+        today = date.today()
+        out = {}
+        for t, snap in snaps.items():
+            h = self.config.holdings.get(t)
+            out[t] = valuation.as_dict(valuation.value(snap, today, bool(h and h.speculative)))
+        return out
+
     def _narrative(self, rec: Recommendation) -> str | None:
         if not self.llm:
             return None
@@ -289,6 +302,10 @@ class PortfolioManager:
             "holdings": [asdict(h) for h in rec.holdings],
             "names": rec.names,
             "earnings": {t: brief(f) for t, f in rec.financials.items()},
+            "valuations": {
+                t: {k: v.get(k) for k in ("rating", "target", "upside", "method", "multiple")}
+                for t, v in rec.valuations.items()
+            },
             "watch_only": [p.ticker for p in rec.long_term if p.ticker not in self.config.holdings],
             "debate": [
                 f"{m.sender} → {m.recipient}：{m.content}"

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # commits state/ratings.json so the next report can show 「前次」
   pages: write
   id-token: write
 
@@ -29,7 +29,19 @@ jobs:
         env:
           # Without this secret the agents still run on their rule-based logic.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: mystocktrack run --out site/report
+        run: mystocktrack run --out site/report --state state/ratings.json
+      - name: Save ratings and target prices for the next report
+        if: github.ref == 'refs/heads/main'
+        # A failed push only loses 「前次」 for one day; never block the report on it.
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/ratings.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update ratings state $(date -u +%F) [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
       - name: Keep the existing dashboard as the site home page
         run: cp index.html site/index.html
       - uses: actions/upload-artifact@v4
