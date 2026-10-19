@@ -237,6 +237,8 @@ def valuation_lines(v: dict, cur: str) -> list[str]:
             f"  - {s['name']}：{s['multiple']:.1f} 倍 × {s['metric']:,.2f} ＝ {s['price']:,.2f}"
             f"（{_pct(s['upside'])}），{s['trigger']}"
         )
+    if v.get("note"):
+        out.append(f"- 注意：{v['note']}。")
     c = v.get("cross_check")
     if c:
         out.append(

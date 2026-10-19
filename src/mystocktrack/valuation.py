@@ -34,6 +34,9 @@ RATING_TABLE = (
     ("投機", "投機部位，依部位上限、硬停損、催化劑與檢討日管理"),
 )
 MIN_BAND_MONTHS = 12
+# Consensus this far below the trailing figure usually means a spin-off or merger changed the
+# company, so history and estimates no longer describe the same business.
+MAX_CONSENSUS_DROP = 0.30
 MAX_LOSS_MONTHS = 0.25  # P/E is unsuitable when trailing EPS was negative this often
 REPORT_LAG = timedelta(days=75)  # annual figures become known about this long after year end
 METHOD_NAMES = {"PE": "本益比", "PS": "股價營收比"}
@@ -218,7 +221,7 @@ def _method(
     if kind == "PE" and losses > MAX_LOSS_MONTHS * len(months):
         return None
     band = tuple(round(percentile(multiples, q), 2) for q in (0.2, 0.5, 0.8))
-    current = price / now
+    current = round(price / now, 2)
     base_m, why = _pick_multiple(current, band)
     label = "EPS" if kind == "PE" else "營收"
     scen = _scenarios(base_m, band, six, price, label)
@@ -325,9 +328,19 @@ def value(snap, today: date | None = None, speculative: bool = False) -> Valuati
         )
 
     chosen.pop("losses")
+    rating = SPECULATIVE if speculative else rating_for(chosen["upside"])
+    note = ""
+    if chosen["metric_6m"] < (1 - MAX_CONSENSUS_DROP) * chosen["metric_now"]:
+        drop = chosen["metric_6m"] / chosen["metric_now"] - 1
+        note = (
+            f"共識推算的 6 個月後數字比現在低 {-drop:.0%}，可能有分拆、併購或一次性獲利，"
+            "歷史倍數與共識不是同一個基礎，暫不評等，請人工確認"
+        )
+        rating = SPECULATIVE if speculative else UNRATED
     v = Valuation(
         ticker=snap.ticker,
-        rating=SPECULATIVE if speculative else rating_for(chosen["upside"]),
+        rating=rating,
+        note=note,
         method_reason=reason,
         price=round(price, 2),
         **chosen,

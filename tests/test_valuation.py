@@ -154,3 +154,12 @@ def test_report_has_ratings_table(snapshots, config, provider):
     assert "- 估值方法：本益比" in md
     assert "目標價 ＝" in md
     assert rec.valuations["JUNK"]["rating"] == "未評等"
+
+
+def test_consensus_far_below_history_is_unrated():
+    fin = financials([2.0] * 27, est_eps=(3.0, 3.0))  # trailing 8, consensus implies ~4
+    fin["estimates"]["0q"] = {"eps": 0.7}
+    fin["estimates"]["+1q"] = {"eps": 0.7}
+    v = val.value(snap(160.0, fin), TODAY)
+    assert v.rating == "未評等" and "分拆" in v.note
+    assert v.target is not None  # numbers stay visible for a human check
