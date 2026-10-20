@@ -1,0 +1,36 @@
+name: tmp-quotes
+on:
+  push:
+    branches: [claude/project-thread-eo3xwb]
+jobs:
+  q:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install -q yfinance pandas
+      - shell: python
+        run: |
+          import yfinance as yf, pandas as pd
+          pd.set_option('display.width',250); pd.set_option('display.max_rows',500)
+          def d(t,p='15d',i='1d',pp=False):
+              try:
+                  h=yf.Ticker(t).history(period=p,interval=i,prepost=pp)
+                  print(f"\n=== {t} {p} {i} pp={pp}"); print(h[['Open','High','Low','Close','Volume']].round(3).tail(80))
+              except Exception as e: print(t,e)
+          for t in ['6920.T','5803.T','^N225','6861.T','8035.T','6857.T','JPY=X','^TNX','BTC-USD','ES=F','NQ=F','^VIX','^SOX','NVDA','INTC','CRWV','NBIS','AMD','MU']:
+              d(t,'1mo')
+          for t in ['6920.T','5803.T']:
+              d(t,'2d','15m')
+          for t in ['NVDA','INTC','CRWV','^SOX','QQQ','SPY']:
+              d(t,'2d','30m')
+          for t in ['ES=F','NQ=F']:
+              d(t,'2d','30m')
+          for t in ['NVDA','INTC','CRWV','NBIS','MSTR','PATH','KBR','OWLS','CRNC','SOUN','AMD','QQQ']:
+              d(t,'1d','5m',True)
+          for t in ['5803.T','6920.T']:
+              h=yf.Ticker(t).history(period='1y'); c=h['Close']
+              print(t,'MA25',round(c.rolling(25).mean().iloc[-1],1),'MA75',round(c.rolling(75).mean().iloc[-1],1),'MA200',round(c.rolling(200).mean().iloc[-1],1))
+          for t in ['NVDA','INTC']:
+              h=yf.Ticker(t).history(period='1y'); c=h['Close']
+              print(t,'MA20',round(c.rolling(20).mean().iloc[-1],2),'MA50',round(c.rolling(50).mean().iloc[-1],2),'MA200',round(c.rolling(200).mean().iloc[-1],2))
