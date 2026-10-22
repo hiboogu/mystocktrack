@@ -1,0 +1,65 @@
+name: tmp-quotes
+on:
+  push:
+    branches: [claude/project-thread-r1cw8w]
+jobs:
+  q:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -q yfinance pandas
+      - shell: python
+        run: |
+          import yfinance as yf, pandas as pd, json, datetime as dt
+          pd.set_option("display.width",250); pd.set_option("display.max_columns",30)
+          print("UTC now", dt.datetime.utcnow())
+          def ind(df):
+              c=df["Close"]; h=df["High"]; l=df["Low"]
+              out={}
+              for n in (5,10,20,50,100,200): out[f"ma{n}"]=round(c.rolling(n).mean().iloc[-1],2)
+              d=c.diff(); up=d.clip(lower=0).ewm(alpha=1/14,adjust=False).mean(); dn=(-d.clip(upper=0)).ewm(alpha=1/14,adjust=False).mean()
+              rsi=100-100/(1+up/dn); out["rsi14"]=round(rsi.iloc[-1],1); out["rsi14_prev"]=round(rsi.iloc[-2],1)
+              e12=c.ewm(span=12,adjust=False).mean(); e26=c.ewm(span=26,adjust=False).mean(); dif=e12-e26; dea=dif.ewm(span=9,adjust=False).mean()
+              out["macd_dif"]=round(dif.iloc[-1],2); out["macd_dea"]=round(dea.iloc[-1],2); out["macd_hist"]=round((dif-dea).iloc[-1],2); out["macd_hist_prev"]=round((dif-dea).iloc[-2],2)
+              m=c.rolling(20).mean(); s=c.rolling(20).std(); out["bb_up"]=round((m+2*s).iloc[-1],2); out["bb_dn"]=round((m-2*s).iloc[-1],2)
+              tr=pd.concat([h-l,(h-c.shift()).abs(),(l-c.shift()).abs()],axis=1).max(axis=1); out["atr14"]=round(tr.rolling(14).mean().iloc[-1],2)
+              out["vol20"]=int(df["Volume"].rolling(20).mean().iloc[-2])
+              out["hi52"]=round(h.tail(252).max(),2); out["lo52"]=round(l.tail(252).min(),2)
+              out["hi60"]=round(h.tail(60).max(),2); out["lo60"]=round(l.tail(60).min(),2); out["lo120"]=round(l.tail(120).min(),2)
+              return out
+          for t in ["NVDA","INTC","^GSPC","^IXIC","^SOX","SMH","^VIX","^TNX","AMD","AVGO","TSM","MU","LRCX","CRWV"]:
+              try:
+                  df=yf.Ticker(t).history(period="2y",interval="1d",auto_adjust=False)
+                  print("\n=====",t); print(df[["Open","High","Low","Close","Volume"]].tail(12).round(2))
+                  if t in ("NVDA","INTC","^SOX","^GSPC","^IXIC"): print(json.dumps(ind(df)))
+              except Exception as e: print(t,"ERR",e)
+          for t in ["NVDA","INTC","^SOX","^IXIC"]:
+              try:
+                  i=yf.Ticker(t).history(period="1d",interval="5m",prepost=True)
+                  print("\n===== intraday",t); print(i[["Open","High","Low","Close","Volume"]].round(2).to_string())
+              except Exception as e: print(t,"ERR",e)
+          for t in ["NVDA","INTC"]:
+              tk=yf.Ticker(t)
+              try:
+                  info=tk.info
+                  keys=["currentPrice","regularMarketPrice","marketCap","sharesOutstanding","trailingPE","forwardPE","priceToSalesTrailing12Months","trailingEps","forwardEps","targetMeanPrice","targetMedianPrice","targetHighPrice","targetLowPrice","numberOfAnalystOpinions","recommendationMean","totalRevenue","revenueGrowth","grossMargins","operatingMargins","freeCashflow","totalCash","totalDebt","earningsTimestamp","fiftyDayAverage","twoHundredDayAverage","beta","dividendYield","pegRatio","enterpriseToRevenue","enterpriseToEbitda"]
+                  print("\n===== info",t, json.dumps({k:info.get(k) for k in keys}))
+              except Exception as e: print("info ERR",e)
+              for nm in ["earnings_estimate","revenue_estimate","eps_trend","growth_estimates","calendar"]:
+                  try: print("---",t,nm); print(getattr(tk,nm))
+                  except Exception as e: print(nm,"ERR",e)
+              try:
+                  q=tk.quarterly_income_stmt
+                  rows=[r for r in ["Total Revenue","Gross Profit","Operating Income","Net Income","Diluted EPS","Diluted Average Shares"] if r in q.index]
+                  print("--- qis",t); print(q.loc[rows].iloc[:, :8])
+              except Exception as e: print("qis ERR",e)
+              try:
+                  cf=tk.quarterly_cashflow
+                  rows=[r for r in ["Operating Cash Flow","Capital Expenditure","Free Cash Flow","Repurchase Of Capital Stock"] if r in cf.index]
+                  print("--- qcf",t); print(cf.loc[rows].iloc[:, :6])
+              except Exception as e: print("qcf ERR",e)
+              try:
+                  for n in tk.news[:12]:
+                      c=n.get("content",n); print("NEWS",c.get("pubDate") or c.get("providerPublishTime"),"|",c.get("title"))
+              except Exception as e: print("news ERR",e)
