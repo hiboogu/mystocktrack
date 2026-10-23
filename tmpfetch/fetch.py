@@ -1,4 +1,4 @@
-# temporary fetch script
+# temporary fetch script v3
 import sys, yfinance as yf, pandas as pd
 pd.set_option("display.width",250); pd.set_option("display.max_rows",500); pd.set_option("display.max_columns",30)
 US=["NVDA","INTC","MSTR","PATH","KBR","CRNC","SOUN","OWLS","AMD","HON","TRMB","IOT","META","CRWV","NBIS","LRCX","MSFT","GOOGL","TSLA","IBM","TXN","^GSPC","^IXIC","^DJI","^RUT","^SOX","RSP","SPY","^VIX","^TNX","^IRX","CL=F","BZ=F","BTC-USD","DX-Y.NYB"]
