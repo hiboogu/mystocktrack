@@ -1,3 +1,4 @@
+# temporary fetch script
 import sys, yfinance as yf, pandas as pd
 pd.set_option("display.width",250); pd.set_option("display.max_rows",500); pd.set_option("display.max_columns",30)
 US=["NVDA","INTC","MSTR","PATH","KBR","CRNC","SOUN","OWLS","AMD","HON","TRMB","IOT","META","CRWV","NBIS","LRCX","MSFT","GOOGL","TSLA","IBM","TXN","^GSPC","^IXIC","^DJI","^RUT","^SOX","RSP","SPY","^VIX","^TNX","^IRX","CL=F","BZ=F","BTC-USD","DX-Y.NYB"]
@@ -36,3 +37,21 @@ for t in ["5803.T","^N225","8035.T","5801.T"]:
         h=yf.Ticker(t).history(period="2d",interval="15m")
         print(f"\n--- {t} 15m ---"); print(h[["Open","High","Low","Close","Volume"]].tail(60).round(1).to_string())
     except Exception as e: print(t,"ERR",e)
+if mode=="jp":
+    h=yf.Ticker("5803.T").history(period="1y")
+    w=h["Close"].resample("W").agg(["min","max","last"])
+    print("\n--- 5803.T weekly close min/max/last (1y) ---"); print(w.round(0).to_string())
+    print("\n--- 5803.T daily lows last 90d sorted ---"); print(h["Low"].tail(90).nsmallest(10).round(0).to_string())
+    for t in ["5803.T","8035.T","6920.T","5801.T","^N225","JPY=X"]:
+        try:
+            x=yf.Ticker(t).history(period="1d",interval="5m")
+            print(f"\n--- {t} 5m today ---"); print(x[["Open","High","Low","Close","Volume"]].round(1).to_string())
+        except Exception as e: print(t,"ERR",e)
+    for t in ["NVDA","INTC","OWLS","^GSPC"]:
+        try:
+            x=yf.Ticker(t).history(period="1d",interval="30m",prepost=True)
+            print(f"\n--- {t} latest ---"); print(x[["Close"]].tail(3).round(3).to_string())
+        except Exception as e: print(t,"ERR",e)
+    for f in ["NQ=F","ES=F"]:
+        try: print(f, yf.Ticker(f).history(period="2d",interval="30m")["Close"].tail(2).round(2).to_string())
+        except Exception as e: print(f,"ERR",e)
