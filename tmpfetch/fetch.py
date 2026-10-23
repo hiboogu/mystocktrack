@@ -44,7 +44,7 @@ if mode=="jp":
     print("\n--- 5803.T daily lows last 90d sorted ---"); print(h["Low"].tail(90).nsmallest(10).round(0).to_string())
     for t in ["5803.T","8035.T","6920.T","5801.T","^N225","JPY=X"]:
         try:
-            x=yf.Ticker(t).history(period="1d",interval="5m")
+            x=yf.Ticker(t).history(period="5d",interval="5m").loc[lambda d: d.index.date==d.index[-1].date()] if t!="JPY=X" else yf.Ticker(t).history(period="1d",interval="30m")
             print(f"\n--- {t} 5m today ---"); print(x[["Open","High","Low","Close","Volume"]].round(1).to_string())
         except Exception as e: print(t,"ERR",e)
     for t in ["NVDA","INTC","OWLS","^GSPC"]:
