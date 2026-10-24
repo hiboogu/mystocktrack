@@ -9,8 +9,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
       - run: pip install -q yfinance pandas
-      - shell: python
+      - shell: bash
         run: |
+          cat > q.py <<'PY'
           import warnings; warnings.filterwarnings('ignore')
           import yfinance as yf, pandas as pd
           T = ["^GSPC","^IXIC","^DJI","^RUT","^SOX","RSP","SPY","^VIX","^VIX9D","^TNX","^IRX","2YY=F","BZ=F","CL=F","GC=F","BTC-USD","JPY=X","DX-Y.NYB",
@@ -48,3 +49,5 @@ jobs:
                   for x in n:
                       c=x.get("content",x); print("  NEWS",c.get("title"),"|",c.get("pubDate"),"|",(c.get("canonicalUrl") or {}).get("url"))
               except Exception as e: print(t,"calERR",e)
+          PY
+          python q.py 2>/dev/null > out.txt; cat out.txt
