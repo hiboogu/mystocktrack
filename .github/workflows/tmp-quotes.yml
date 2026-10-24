@@ -11,10 +11,11 @@ jobs:
       - run: pip install -q yfinance pandas
       - shell: python
         run: |
+          import warnings; warnings.filterwarnings('ignore')
           import yfinance as yf, pandas as pd
           T = ["^GSPC","^IXIC","^DJI","^RUT","^SOX","RSP","SPY","^VIX","^VIX9D","^TNX","^IRX","2YY=F","BZ=F","CL=F","GC=F","BTC-USD","JPY=X","DX-Y.NYB",
                "NVDA","INTC","MSTR","PATH","KBR","CRNC","SOUN","OWLS","AMD","HON","TRMB","IOT","META","MSFT","GOOGL","AMZN","LRCX","AMAT","CRWV","NBIS","AVGO","TSM","COHR","GLW","CLS","ANET",
-               "^N225","^TOPX","1306.T","5803.T","5801.T","5802.T","8035.T","6920.T","6857.T","6861.T"]
+               "^N225","1306.T","5803.T","5801.T","5802.T","8035.T","6920.T","6857.T","6861.T"]
           def rsi(s,n=14):
               d=s.diff(); u=d.clip(lower=0).ewm(alpha=1/n,adjust=False).mean(); l=(-d.clip(upper=0)).ewm(alpha=1/n,adjust=False).mean()
               return 100-100/(1+u/l)
@@ -22,6 +23,9 @@ jobs:
               try:
                   h=yf.Ticker(t).history(period="1y",auto_adjust=False)
                   if h.empty: print(t,"EMPTY"); continue
+                  if pd.isna(h.Close.iloc[-1]):
+                      i=yf.Ticker(t).history(period="1d",interval="5m",prepost=False)
+                      if not i.empty: h.loc[h.index[-1],"Close"]=i.Close.dropna().iloc[-1]
                   c=h.Close; v=h.Volume
                   last=h.iloc[-1]; prev=c.iloc[-2]
                   print(f"{t}|{h.index[-1].date()}|O {last.Open:.2f} H {last.High:.2f} L {last.Low:.2f} C {last.Close:.2f}|chg {100*(last.Close/prev-1):+.2f}%|wk {100*(last.Close/c.iloc[-6]-1):+.2f}%|MA20 {c.rolling(20).mean().iloc[-1]:.2f} MA50 {c.rolling(50).mean().iloc[-1]:.2f} MA200 {c.rolling(200).mean().iloc[-1]:.2f}|RSI {rsi(c).iloc[-1]:.1f}|volx {v.iloc[-1]/v.iloc[-21:-1].mean() if v.iloc[-21:-1].mean()>0 else 0:.2f}|52H {c.max():.2f} 52L {c.min():.2f}")
