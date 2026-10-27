@@ -35,7 +35,7 @@ SOUN = { cost = 6.0854, shares = 26 }
 # 可加 catalyst = "等待的題材" 與 review_by = "2027-06-30"（到期重新檢討）。
 OWLS = { cost = 5.3672, shares = 60, speculative = true }
 NVDA = { cost = 216, shares = 5 }  # 2026-10-16 買進
-INTC = { cost = 91, shares = 2 }   # 2026-10-16 買進
+INTC = { cost = 88.0, shares = 5 }  # 2026-10-16 買 91x2，10-22 加買 86x3
 
 [risk]
 max_single_weight = 0.20   # 單一長期持股上限
