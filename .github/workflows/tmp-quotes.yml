@@ -13,7 +13,8 @@ jobs:
         run: |
           import warnings; warnings.filterwarnings('ignore')
           import yfinance as yf, pandas as pd, datetime as dt
-          T="NVDA INTC KBR PATH MSTR CRNC SOUN OWLS USAR DAL DHR DVN CRBG FIVE AMD HON TRMB IOT CIFR CLSK FRVO IE SPY QQQ SMH IWM ^VIX ^TNX BTC-USD TWD=X 5803.T ES=F NQ=F CL=F".split()
+          OUT=[]
+          T="NVDA INTC KBR PATH MSTR CRNC SOUN OWLS USAR DAL DHR DVN CRBG FIVE AMD HON TRMB IOT CIFR CLSK FRVO IE SPY QQQ SMH IWM".split()
           print("now", dt.datetime.utcnow())
           for t in T:
               try:
@@ -25,11 +26,8 @@ jobs:
                   atr=tr.rolling(14).mean()
                   last=d.tail(3)
                   rows=" | ".join(f"{i.date()} O{r.Open:.2f} H{r.High:.2f} L{r.Low:.2f} C{r.Close:.2f} V{r.Volume/1e6:.2f}M" for i,r in last.iterrows())
-                  print(f"{t}: {rows} | MA5 {c.tail(5).mean():.2f} MA10 {c.tail(10).mean():.2f} MA20 {c.tail(20).mean():.2f} MA50 {c.tail(50).mean():.2f} MA200 {c.tail(200).mean():.2f} RSI {rsi.iloc[-1]:.1f} ATR {atr.iloc[-1]:.2f} 52wH {d.High.max():.2f} 52wL {d.Low.min():.2f} vol20 {d.Volume.tail(20).mean()/1e6:.2f}M")
+                  OUT.append(f"{t}: {rows} | MA5 {c.tail(5).mean():.2f} MA10 {c.tail(10).mean():.2f} MA20 {c.tail(20).mean():.2f} MA50 {c.tail(50).mean():.2f} MA200 {c.tail(200).mean():.2f} RSI {rsi.iloc[-1]:.1f} ATR {atr.iloc[-1]:.2f} 52wH {d.High.max():.2f} 52wL {d.Low.min():.2f} vol20 {d.Volume.tail(20).mean()/1e6:.2f}M")
                   p=yf.Ticker(t).history(period="2d",interval="5m",prepost=True)
-                  if len(p): print(f"  latest bar {p.index[-1]} {p.Close.iloc[-1]:.2f}")
+                  if len(p): OUT.append(f"  latest bar {p.index[-1]} {p.Close.iloc[-1]:.2f}")
               except Exception as e: print(t,"ERR",e)
-          for t in "NVDA INTC KBR MSTR DAL DHR DVN CRBG FIVE AMD PATH CRNC HON TRMB IOT".split():
-              try:
-                  cal=yf.Ticker(t).calendar; print(t,"cal",cal.get("Earnings Date"))
-              except Exception as e: print(t,"calERR",e)
+          import sys; sys.stderr.flush(); print("=====BEGIN"); print("\n".join(OUT))
