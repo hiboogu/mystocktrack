@@ -90,15 +90,22 @@ def to_markdown(rec: Recommendation) -> str:
         ]
         for h in rec.holdings:
             stop = f"{h.stop_price:,.2f}" if h.stop_price else ""
-            name = f"{h.ticker}（投機）" if h.speculative else h.ticker
+            name = f"{h.ticker}（{h.category}）" if h.category else h.ticker
             lines.append(
                 f"| {name} | {h.shares:g} | {h.cost:,.2f} | {h.price:,.2f} | {h.value:,.2f} | "
                 f"{h.pnl:+,.2f} | {h.pnl_pct:+.1%} | {h.score:+.2f} | **{h.action}** | {stop} |"
             )
         lines.append("")
+        buckets: dict[str, float] = {}
+        for h in rec.holdings:
+            if h.category:
+                buckets[h.category] = buckets.get(h.category, 0.0) + h.weight
+        if buckets:
+            parts = "、".join(f"{c} {w:.1%}" for c, w in buckets.items())
+            lines += [f"分類占比：{parts}", ""]
         for h in (h for h in rec.holdings if h.speculative):
             lines.append(
-                f"- **{h.ticker}** 為投機部位：占持股 {h.weight:.1%}，硬停損 {h.stop_price:,.2f}"
+                f"- **{h.ticker}** 為投機部位：占持股 {h.weight:.1%}，停損 {h.stop_price:,.2f}"
                 f"；催化劑：{h.catalyst or '未填'}；檢討日：{h.review_by or '未填'}。"
                 "分數僅供參考，不依長期規則出場。"
             )
