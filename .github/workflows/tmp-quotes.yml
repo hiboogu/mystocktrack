@@ -11,8 +11,9 @@ jobs:
       - run: pip install -q yfinance pandas
       - shell: python
         run: |
+          import warnings; warnings.filterwarnings('ignore')
           import yfinance as yf, pandas as pd, datetime as dt
-          T="NVDA INTC KBR PATH MSTR CRNC SOUN OWLS USAR DAL DHR DVN CRBG FIVE AMD HON TRMB IOT CIFR CLSK FRVO IE SPY QQQ SMH IWM ^VIX ^TNX BTC-USD TWD=X 5803.T ES=F NQ=F".split()
+          T="NVDA INTC KBR PATH MSTR CRNC SOUN OWLS USAR DAL DHR DVN CRBG FIVE AMD HON TRMB IOT CIFR CLSK FRVO IE SPY QQQ SMH IWM ^VIX ^TNX BTC-USD TWD=X 5803.T ES=F NQ=F CL=F".split()
           print("now", dt.datetime.utcnow())
           for t in T:
               try:
