@@ -1,0 +1,42 @@
+name: tmp-quotes
+on:
+  push:
+    branches: [claude/project-thread-56h1po]
+jobs:
+  q:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -q yfinance pandas
+      - shell: python
+        run: |
+          import warnings; warnings.filterwarnings('ignore')
+          import yfinance as yf, pandas as pd, datetime as dt
+          OUT=[]
+          T="NVDA INTC KBR PATH MSTR CRNC SOUN OWLS USAR DAL DHR DVN CRBG FIVE AMD HON TRMB IOT CIFR CLSK FRVO IE 6920.T 6861.T 5803.T ^GSPC ^IXIC ^DJI ^RUT ^SOX RSP ^VIX ^VIX9D ^TNX ^IRX CL=F BZ=F GC=F BTC-USD DX-Y.NYB JPY=X MSFT GOOGL META AMZN".split()
+          print("now", dt.datetime.utcnow())
+          for t in T:
+              try:
+                  tk=yf.Ticker(t)
+                  d=tk.history(period="1y",interval="1d",auto_adjust=False)
+                  c=d["Close"]
+                  delta=c.diff(); up=delta.clip(lower=0).rolling(14).mean(); dn=(-delta.clip(upper=0)).rolling(14).mean()
+                  rsi=100-100/(1+up/dn)
+                  tr=pd.concat([d.High-d.Low,(d.High-c.shift()).abs(),(d.Low-c.shift()).abs()],axis=1).max(axis=1)
+                  atr=tr.rolling(14).mean()
+                  last=d.tail(3)
+                  rows=" | ".join(f"{i.date()} O{r.Open:.2f} H{r.High:.2f} L{r.Low:.2f} C{r.Close:.2f} V{r.Volume/1e6:.2f}M" for i,r in last.iterrows())
+                  chg=(c.iloc[-1]/c.iloc[-2]-1)*100; chg5=(c.iloc[-1]/c.iloc[-6]-1)*100
+                  OUT.append(f"{t}: {rows} | chg {chg:+.2f}% 5d {chg5:+.2f}% MA5 {c.tail(5).mean():.2f} MA10 {c.tail(10).mean():.2f} MA20 {c.tail(20).mean():.2f} MA50 {c.tail(50).mean():.2f} MA200 {c.tail(200).mean():.2f} RSI {rsi.iloc[-1]:.1f} ATR {atr.iloc[-1]:.2f} 52wH {d.High.max():.2f} 52wL {d.Low.min():.2f} volx {d.Volume.iloc[-1]/max(d.Volume.tail(21).head(20).mean(),1):.2f}")
+                  if not t.startswith("^") and "=" not in t and "." not in t[-2:]:
+                      try:
+                          cal=tk.calendar
+                          if cal and "Earnings Date" in cal: OUT.append(f"  earnings {cal['Earnings Date']}")
+                      except Exception: pass
+                  if t in ("NVDA","INTC","KBR","PATH","MSTR","CRNC","SOUN","OWLS","USAR","DAL","^GSPC","^SOX","MSFT","GOOGL","META"):
+                      p=tk.history(period="2d",interval="30m",prepost=True)
+                      p=p[p.index.date==p.index[-1].date()]
+                      OUT.append("  30m: "+" ".join(f"{i.strftime('%H:%M')}:{r.Low:.2f}-{r.High:.2f}/{r.Close:.2f}" for i,r in p.iterrows()))
+              except Exception as e: OUT.append(f"{t} ERR {e}")
+          print("=====BEGIN"); print("\n".join(OUT))
