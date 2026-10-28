@@ -60,6 +60,7 @@ class HoldingReview:
     speculative: bool = False
     catalyst: str = ""
     review_by: str = ""
+    category: str = ""
 
 
 @dataclass
@@ -261,6 +262,8 @@ class PortfolioManager:
                     atr = ind.avg_true_range_pct(snap.closes, 14)
                     stop = round(price * (1 - 3 * atr), 2) if atr else None
                 action = holding_action(pos.score, pnl_pct, risk.max_loss_from_cost)
+            if h.stop:
+                stop = h.stop
             reviews.append(
                 HoldingReview(
                     ticker=t,
@@ -277,6 +280,7 @@ class PortfolioManager:
                     speculative=h.speculative,
                     catalyst=h.catalyst,
                     review_by=h.review_by,
+                    category=h.category or ("投機" if h.speculative else ""),
                 )
             )
         return sorted(reviews, key=lambda r: r.pnl_pct)

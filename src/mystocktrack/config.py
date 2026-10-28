@@ -24,6 +24,10 @@ class Holding:
 
     A speculative holding is a deliberate theme bet. It is judged by position size, a hard
     loss line and a catalyst deadline instead of the long-term exit rules.
+
+    category is the user's own bucket: 長期 (long-term), 短線 (short-term) or 投機
+    (speculative, which implies speculative = true). stop is a closing-price stop the user
+    agreed on; it replaces the computed stop reference.
     """
 
     cost: float
@@ -31,6 +35,12 @@ class Holding:
     speculative: bool = False
     catalyst: str = ""
     review_by: str = ""  # ISO date; after it the bet gets re-examined
+    category: str = ""
+    stop: float | None = None
+
+    def __post_init__(self):
+        if self.category == "投機" and not self.speculative:
+            object.__setattr__(self, "speculative", True)
 
 
 @dataclass(frozen=True)

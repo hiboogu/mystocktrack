@@ -92,3 +92,21 @@ def test_speculative_holding_ignores_long_term_exit(provider, held_config, snaps
     assert sum(h.weight for h in rec.holdings) == pytest.approx(1.0, abs=0.001)
     md = to_markdown(rec)
     assert "JUNK（投機）" in md and "催化劑：新品" in md
+
+
+def test_category_and_agreed_stop(provider, held_config):
+    from dataclasses import replace
+
+    from mystocktrack.config import Holding
+
+    holdings = {
+        "QUAL": Holding(50.0, 10, category="長期", stop=42.5),
+        "JUNK": Holding(200.0, 5, category="投機"),
+        "MSTR": Holding(100.0, 2, category="短線"),
+    }
+    rec = PortfolioManager(provider, replace(held_config, holdings=holdings)).run()
+    by_ticker = {h.ticker: h for h in rec.holdings}
+    assert by_ticker["QUAL"].stop_price == 42.5  # agreed stop replaces the computed one
+    assert by_ticker["JUNK"].speculative  # 投機 implies speculative rules
+    md = to_markdown(rec)
+    assert "QUAL（長期）" in md and "MSTR（短線）" in md and "分類占比：" in md
