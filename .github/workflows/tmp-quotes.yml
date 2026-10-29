@@ -1,0 +1,41 @@
+name: tmp quotes
+on:
+  push:
+    branches: [claude/project-thread-9v92px]
+jobs:
+  q:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -q yfinance pandas
+      - shell: python
+        run: |
+          import yfinance as yf, pandas as pd
+          pd.set_option("display.width",250)
+          syms="NQ=F ES=F YM=F RTY=F CL=F BZ=F BTC-USD ^TNX ^VIX DX-Y.NYB JPY=X TWD=X NVDA INTC KBR PATH MSTR CRNC SOUN OWLS DAL GOOGL MSFT AMZN AMD SMH".split()
+          for s in syms:
+              try:
+                  d=yf.Ticker(s).history(period="1y",interval="1d",auto_adjust=False)
+                  c=d["Close"]
+                  def rsi(c,n=14):
+                      dd=c.diff();u=dd.clip(lower=0).ewm(alpha=1/n).mean();l=(-dd.clip(upper=0)).ewm(alpha=1/n).mean();return (100-100/(1+u/l)).iloc[-1]
+                  tr=pd.concat([d.High-d.Low,(d.High-c.shift()).abs(),(d.Low-c.shift()).abs()],axis=1).max(axis=1)
+                  i=yf.Ticker(s).history(period="2d",interval="5m",prepost=True)
+                  last=i["Close"].iloc[-1]; lt=i.index[-1]
+                  print(f"{s:9s} d_last={d.index[-1].date()} close={c.iloc[-1]:.2f} prev={c.iloc[-2]:.2f} hi={d.High.iloc[-1]:.2f} lo={d.Low.iloc[-1]:.2f} ma5={c.tail(5).mean():.2f} ma10={c.tail(10).mean():.2f} ma20={c.tail(20).mean():.2f} ma50={c.tail(50).mean():.2f} ma200={c.tail(200).mean():.2f} rsi={rsi(c):.1f} atr={tr.tail(14).mean():.2f} 52h={d.High.max():.2f} 52l={d.Low.min():.2f} | ext_last={last:.2f} @ {lt} ({(last/c.iloc[-1]-1)*100:+.2f}%) ext_lo={i.loc[i.index>d.index[-1]+pd.Timedelta(hours=16),'Low'].min() if len(i) else 0:.2f}")
+              except Exception as e: print(s,"ERR",e)
+          for s in ["INTC","KBR","MSTR","AMZN","NVDA"]:
+              try:
+                  t=yf.Ticker(s); print(s,"calendar",t.calendar)
+              except Exception as e: print(s,"cal ERR",e)
+          for s in ["INTC","MSTR","KBR"]:
+              try:
+                  t=yf.Ticker(s); exps=t.options[:2]; print(s,"exps",exps)
+                  ch=t.option_chain(exps[0]); px=t.history(period="1d")["Close"].iloc[-1]
+                  calls=ch.calls; puts=ch.puts
+                  k=calls.iloc[(calls.strike-px).abs().argsort()[:1]]; p=puts.iloc[(puts.strike-px).abs().argsort()[:1]]
+                  print(s,"px",px,"ATM call",k[["strike","lastPrice","bid","ask","impliedVolatility"]].to_dict("records"),"ATM put",p[["strike","lastPrice","bid","ask","impliedVolatility"]].to_dict("records"))
+                  st=(k.bid.iloc[0]+k.ask.iloc[0])/2+(p.bid.iloc[0]+p.ask.iloc[0])/2
+                  print(s,"straddle mid",round(st,2),"implied move %",round(st/px*100,2))
+              except Exception as e: print(s,"opt ERR",e)
