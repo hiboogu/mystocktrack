@@ -1,0 +1,28 @@
+name: tmp quotes
+on:
+  push:
+    branches: [claude/project-thread-sut3ut]
+jobs:
+  q:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -q yfinance pandas
+      - shell: python
+        run: |
+          import yfinance as yf, warnings, pandas as pd
+          warnings.filterwarnings("ignore"); pd.set_option("display.width",200)
+          t=yf.Ticker("USAR")
+          d=t.history(period="6mo"); c=d.Close
+          d["MA10"]=c.rolling(10).mean(); d["MA20"]=c.rolling(20).mean(); d["MA50"]=c.rolling(50).mean()
+          print("QQD"); print(d[["Open","High","Low","Close","Volume","MA10","MA20","MA50"]].tail(5).round(3).to_string())
+          i=t.history(period="2d",interval="5m",prepost=True)
+          print("QQI"); print(i[["Open","High","Low","Close","Volume"]].tail(40).round(3).to_string())
+          for s in ["MP","REMX","LYC.AX","CRML","UAMY","IWM","QQQ","SPY","^VIX","^TNX","BTC-USD"]:
+              h=yf.Ticker(s).history(period="5d"); x=yf.Ticker(s).history(period="1d",interval="5m")
+              print("QQ",s,h.Close.tail(3).round(3).tolist(), "last", (x.Close.iloc[-1] if len(x) else None), x.index[-1] if len(x) else None)
+          try:
+              for n in t.news[:8]:
+                  c2=n.get("content",n); print("QN",c2.get("pubDate"),c2.get("title"))
+          except Exception as e: print(e)
