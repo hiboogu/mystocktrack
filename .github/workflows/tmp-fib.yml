@@ -1,0 +1,20 @@
+name: tmp-fib
+on:
+  push:
+    branches: [claude/project-thread-w01rfa]
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install -q yfinance pandas
+      - run: |
+          python - <<'PY'
+          import yfinance as yf
+          for t in ["INTC","DAL","NVDA"]:
+              d = yf.download(t, period="2y", interval="1d", auto_adjust=False, progress=False, multi_level_index=False)
+              print(f"=== {t} {len(d)}")
+              for i,r in d.iterrows():
+                  print(f"{t},{i.date()},{r.Open:.2f},{r.High:.2f},{r.Low:.2f},{r.Close:.2f},{int(r.Volume)}")
+          PY
