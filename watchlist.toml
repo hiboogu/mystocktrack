@@ -7,11 +7,11 @@
 # 2026-10-28 Max 的三大類（只是標籤，分析仍走長期流程）：
 #   長期：AMD、HON、TRMB、IOT、Lasertec、Keyence、Fujikura
 #   短線（10 萬分散短線池）：DHR、DVN、CRBG（DAL 10/30 已買進，移到持股）
-#   投機（低價 AI／避險篩選）：FRVO、IE
+#   投機（低價 AI／避險篩選）：FRVO、IE、USAR（2026-10-28 已全數賣出，改回僅觀察）
 tickers = [
   "AMD", "HON", "TRMB", "IOT", "6920.T", "6861.T", "5803.T",
   "DHR", "DVN", "CRBG",
-  "FRVO", "IE",
+  "FRVO", "IE", "USAR",
 ]
 
 [short_term]
@@ -40,7 +40,6 @@ PATH = { cost = 18.0451, shares = 78, category = "長期", stop = 12.04 }
 MSTR = { cost = 126.315, shares = 2, category = "短線", stop = 127.39 }
 CRNC = { cost = 8.0904, shares = 25, category = "短線", stop = 7.90 }  # 抱到 11/18 財報
 SOUN = { cost = 6.0854, shares = 26, category = "投機", stop = 4.22, catalyst = "11/5 財報", review_by = "2026-11-06" }
-USAR = { cost = 9.8046, shares = 100, category = "投機", stop = 9.0, catalyst = "11/5 財報、11/10 中國稀土出口管制暫停到期", review_by = "2026-11-06" }
 DAL = { cost = 80.55, shares = 7, category = "短線", stop = 76.5, catalyst = "突破 81.5 後追蹤，T1 86 賣一半、T2 90" }  # 10/30 買進
 OWLS = { cost = 5.0652, shares = 90, category = "投機", catalyst = "Harbor 月交易量、Lind 轉換節奏、SBI 動作", review_by = "2026-12-31" }
 
