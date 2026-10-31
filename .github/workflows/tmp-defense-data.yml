@@ -1,0 +1,50 @@
+name: tmp-defense-data
+on:
+  push:
+    branches: [claude/project-thread-efrlva]
+    paths: [.github/workflows/tmp-defense-data.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install -q yfinance pandas
+      - name: fetch
+        run: |
+          mkdir -p tmpdata
+          python - <<'PY'
+          import yfinance as yf, pandas as pd, json
+          t = ["LMT","RTX","GD","NOC","LHX","HII","ITA","SPY","SMH","XLI",
+               "7011.T","7012.T","7013.T","6503.T","6701.T","7721.T","6208.T","1306.T","^N225","JPY=X","EWJ","DXJ","BZ=F"]
+          d = yf.download(t, start="2000-01-01", end="2026-10-31", auto_adjust=True, progress=False, group_by="ticker")
+          close = pd.DataFrame({k: d[k]["Close"] for k in t if k in d.columns.get_level_values(0)})
+          vol = pd.DataFrame({k: d[k]["Volume"] for k in t if k in d.columns.get_level_values(0)})
+          hi = pd.DataFrame({k: d[k]["High"] for k in t if k in d.columns.get_level_values(0)})
+          lo = pd.DataFrame({k: d[k]["Low"] for k in t if k in d.columns.get_level_values(0)})
+          close.to_csv("tmpdata/close.csv"); vol.to_csv("tmpdata/volume.csv")
+          hi.tail(400).to_csv("tmpdata/high.csv"); lo.tail(400).to_csv("tmpdata/low.csv")
+          info = {}
+          keys = ["shortName","longName","marketCap","forwardPE","trailingPE","dividendYield","priceToBook","currentPrice","regularMarketPrice","fiftyTwoWeekHigh","fiftyTwoWeekLow","totalRevenue","revenueGrowth","earningsGrowth","operatingMargins","currency","beta","sharesOutstanding","targetMeanPrice","recommendationMean","numberOfAnalystOpinions"]
+          for k in ["LMT","RTX","GD","NOC","LHX","HII","7011.T","7012.T","7013.T","6503.T","6701.T","7721.T","6208.T"]:
+              try:
+                  i = yf.Ticker(k).info
+                  info[k] = {x: i.get(x) for x in keys}
+              except Exception as e: info[k] = {"err": str(e)}
+              try:
+                  cal = yf.Ticker(k).calendar
+                  info[k]["calendar"] = {a: str(b) for a, b in (cal or {}).items()}
+              except Exception as e: info[k]["calendar_err"] = str(e)
+          json.dump(info, open("tmpdata/info.json","w"), indent=1, default=str)
+          print(close.tail(3).T)
+          PY
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tmpdata
+          git commit -m "tmp defense data [skip ci]"
+          git push
