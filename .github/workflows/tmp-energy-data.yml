@@ -1,0 +1,33 @@
+name: tmp energy data
+on:
+  push:
+    branches: [claude/project-thread-jzpysk]
+    paths: [.github/workflows/tmp-energy-data.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install yfinance pandas
+      - name: download
+        run: |
+          python - <<'PY'
+          import yfinance as yf, pandas as pd, os
+          os.makedirs("tmpdata", exist_ok=True)
+          t = "SMH SOXX NVDA QQQ SPY XLK XLE XOP OIH DVN XOM CVX OXY COP VST CEG NRG TLN XLU URA CCJ OKLO SMR VRT ETN GEV PWR NLR ICLN TAN DAL IWM CL=F BZ=F NG=F ^TNX ^VIX DX-Y.NYB".split()
+          d = yf.download(t, start="2021-01-01", auto_adjust=True, progress=False)["Close"]
+          d.round(4).to_csv("tmpdata/daily.csv")
+          print(d.tail(3).T)
+          print(d.notna().sum())
+          m = yf.download("XLE ^GSPC CL=F XLU XLK".split(), start="1999-01-01", interval="1mo", auto_adjust=True, progress=False)["Close"]
+          m.round(4).to_csv("tmpdata/monthly_long.csv")
+          print(m.tail(3))
+          PY
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tmpdata && git commit -m "tmp data [skip ci]" && git push origin HEAD:claude/project-thread-jzpysk
