@@ -1,0 +1,39 @@
+name: tmp data 2
+on:
+  push:
+    branches: [claude/project-thread-jzpysk]
+    paths: [.github/workflows/tmp-energy-data.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install yfinance pandas
+      - name: download
+        run: |
+          python - <<'PY'
+          import yfinance as yf, pandas as pd, os
+          os.makedirs("tmpdata", exist_ok=True)
+          t = ("XOM CVX COP EOG OXY DVN SLB MPC VLO FANG XLE "
+               "GIS KHC HSY MDLZ KO PEP CAG CPB HRL TSN ADM SJM KDP MKC XLP "
+               "SMH SPY ITA XAR LMT RTX NOC GD GLD GDX XLV LLY NVO IBB XLF JPM GS XLI PAVE CIBR COPX XME EWJ DXJ INDA TLT IBIT BTC-USD VNQ XLU URA SRVR GRID BRK-B WMT COST").split()
+          d = yf.download(t, start="2006-01-01", auto_adjust=True, progress=False)["Close"]
+          d.round(4).to_csv("tmpdata/daily2.csv")
+          print(d.notna().sum())
+          info = {}
+          for s in ["XOM","CVX","COP","EOG","OXY","DVN","SLB","MPC","VLO","FANG","GIS","KHC","HSY","MDLZ","KO","PEP","CAG","CPB","HRL","TSN","ADM","SJM","KDP","MKC","LMT","RTX","NOC","GD","LLY","NVO","JPM","GS"]:
+              try:
+                  i = yf.Ticker(s).info
+                  info[s] = {k: i.get(k) for k in ["marketCap","trailingPE","forwardPE","dividendYield","beta","fiftyTwoWeekHigh","fiftyTwoWeekLow","earningsGrowth","revenueGrowth"]}
+              except Exception as e:
+                  info[s] = {"err": str(e)}
+          pd.DataFrame(info).T.to_csv("tmpdata/info.csv")
+          PY
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tmpdata && git commit -m "tmp data [skip ci]" && git push origin HEAD:claude/project-thread-jzpysk
