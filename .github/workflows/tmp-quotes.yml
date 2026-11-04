@@ -1,0 +1,23 @@
+name: tmp quotes
+on:
+  push:
+    branches: [claude/project-thread-prsi6p]
+jobs:
+  q:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install yfinance pandas
+      - name: quotes
+        shell: python
+        run: |
+          import yfinance as yf
+          for t in ["DAL","SOUN","TWD=X"]:
+            h=yf.Ticker(t).history(period="1d",interval="1m",prepost=False)
+            if len(h)==0: print(t,"none"); continue
+            print(t,"last",h.index[-1],round(h["Close"].iloc[-1],4),"open",round(h["Open"].iloc[0],4),"hi",round(h["High"].max(),4),"lo",round(h["Low"].min(),4))
+            for lvl in ([86,86.1,86.2,86.29] if t=="DAL" else [4.15,4.2,4.226]):
+              if t!="TWD=X":
+                hit=h[h["High"]>=lvl]; print("  first >=",lvl, hit.index[0] if len(hit) else "never")
+          d=yf.Ticker("DAL").history(period="3mo")["Close"]; print("DAL ma50",round(d.tail(50).mean(),2),"ma20",round(d.tail(20).mean(),2))
