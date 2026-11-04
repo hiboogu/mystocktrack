@@ -36,7 +36,7 @@ tickers = [
 NVDA = { cost = 213.271, shares = 10, category = "長期", stop = 190 }  # 10/30 210x5 成交
 INTC = { cost = 88.226, shares = 5, category = "長期", stop = 55, catalyst = "1 月財報毛利率回到 40% 以上；14A 外部客戶", review_by = "2027-01-31" }  # 論點失效：毛利率連兩季 < 40% 或 2027 年中前 14A 無外部客戶
 KBR = { cost = 38.1055, shares = 20, category = "長期", stop = 35.18 }
-PATH = { cost = 18.0451, shares = 78, category = "長期", stop = 12.04 }
+PATH = { cost = 18.0451, shares = 78, category = "長期", stop = 11.40, catalyst = "12/2 財報：新增 ARR、淨留存率 ≥109%、AI 代理營收揭露", review_by = "2026-12-03" }  # 論點失效：淨留存率 < 105% 或毛留存率 < 95%、連兩季新增 ARR 年減、ARR／營收財測下修
 MSTR = { cost = 126.315, shares = 2, category = "短線", stop = 127.39 }
 CRNC = { cost = 8.0904, shares = 25, category = "短線", stop = 7.90 }  # 抱到 11/18 財報
 SOUN = { cost = 6.0854, shares = 26, category = "投機", stop = 4.22, catalyst = "11/5 財報", review_by = "2026-11-06" }
