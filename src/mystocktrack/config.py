@@ -13,9 +13,7 @@ class RiskLimits:
     max_crypto_sleeve: float = 0.10
     high_volatility: float = 0.45
     deep_drawdown: float = 0.35
-    max_loss_from_cost: float = 0.30
     speculative_max_weight: float = 0.05
-    speculative_max_loss: float = 0.50
 
 
 @dataclass(frozen=True)
@@ -60,4 +58,7 @@ def load_config(path: str | Path = "watchlist.toml") -> Config:
     # Anything held is always analyzed; unlisted holdings default to the long-term group.
     long_term += [t for t in holdings if t not in long_term and t not in short_term]
     names = dict(data.get("names", {}))
-    return Config(long_term, short_term, RiskLimits(**data.get("risk", {})), holdings, names)
+    # Old cost-based limits (max_loss_from_cost, speculative_max_loss) are ignored if still present.
+    known = set(RiskLimits.__dataclass_fields__)
+    risk = RiskLimits(**{k: v for k, v in data.get("risk", {}).items() if k in known})
+    return Config(long_term, short_term, risk, holdings, names)

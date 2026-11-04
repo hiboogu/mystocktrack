@@ -31,7 +31,7 @@ RATING_TABLE = (
     ("中立", "−10% ～ +15%"),
     ("降低持股", "< −10%"),
     ("未評等", "資料不足以判斷"),
-    ("投機", "投機部位，依部位上限、硬停損、催化劑與檢討日管理"),
+    ("投機", "投機部位，依部位上限、停損線、催化劑與檢討日管理"),
 )
 MIN_BAND_MONTHS = 12
 # Consensus this far below the trailing figure usually means a spin-off or merger changed the
