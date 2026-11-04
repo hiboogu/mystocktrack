@@ -40,8 +40,7 @@ KBR = { cost = 38.1055, shares = 20, category = "長期", stop = 35.18 }
 PATH = { cost = 18.0451, shares = 78, category = "長期", stop = 11.40, catalyst = "12/2 財報：新增 ARR、淨留存率 ≥109%、AI 代理營收揭露", review_by = "2026-12-03" }  # 論點失效：淨留存率 < 105% 或毛留存率 < 95%、連兩季新增 ARR 年減、ARR／營收財測下修
 MSTR = { cost = 126.315, shares = 2, category = "短線", stop = 118 }  # 4 月、8 月低點 116.4～118.45 下方；126 可加 1 股
 CRNC = { cost = 8.0904, shares = 25, category = "短線", stop = 7.45 }  # 抱到 11/18 財報
-SOUN = { cost = 6.0854, shares = 26, category = "投機", stop = 4.22, catalyst = "11/5 財報", review_by = "2026-11-06" }
-DAL = { cost = 80.55, shares = 7, category = "短線", stop = 76.5, catalyst = "T1 86 賣 3 股（11/4 掛單）、T2 90；賣出後剩 4 股改用 50 日線移動停損" }  # 10/30 買進
+DAL = { cost = 80.55, shares = 4, category = "短線", stop = 80.4, catalyst = "T2 90；停損為 50 日線移動停損，每週更新" }  # 10/30 買 7 股；11/4 以 86 賣 3 股（含費 86.085）
 OWLS = { cost = 5.0652, shares = 90, category = "投機", catalyst = "Harbor 月交易量、Lind 轉換節奏、SBI 動作", review_by = "2026-12-31" }
 
 [risk]
