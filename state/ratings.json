@@ -1,6 +1,16 @@
 {
   "5803.T": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 224.1171,
+      "multiple": 18.52,
+      "price": 3023.0,
+      "rating": "強力買進",
+      "target": 4150.65,
+      "upside": 0.3730231764472378
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 224.1171,
@@ -9,20 +19,20 @@
       "rating": "強力買進",
       "target": 4289.6,
       "upside": 0.37311193239436613
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 212.44,
-      "multiple": 18.66,
-      "price": 3046.0,
-      "rating": "強力買進",
-      "target": 3964.13,
-      "upside": 0.301421667760998
     }
   },
   "6861.T": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 2536.9759,
+      "multiple": 33.41,
+      "price": 74920.0,
+      "rating": "中立",
+      "target": 84760.37,
+      "upside": 0.1313449744687667
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 2536.9759,
@@ -31,20 +41,20 @@
       "rating": "中立",
       "target": 86104.96,
       "upside": 0.13117397168681033
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 2536.9759,
-      "multiple": 33.88,
-      "price": 75990.0,
-      "rating": "中立",
-      "target": 85952.74,
-      "upside": 0.1311059898618241
     }
   },
   "6920.T": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 952.4095,
+      "multiple": 48.02,
+      "price": 37130.0,
+      "rating": "買進",
+      "target": 45734.7,
+      "upside": 0.23174533234581185
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 952.4095,
@@ -53,20 +63,20 @@
       "rating": "買進",
       "target": 45968.04,
       "upside": 0.22974971956928836
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 952.4095,
-      "multiple": 47.27,
-      "price": 36460.0,
-      "rating": "買進",
-      "target": 45020.4,
-      "upside": 0.23478872915523885
     }
   },
   "AMD": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 9.9732,
+      "multiple": 67.16,
+      "price": 585.3,
+      "rating": "中立",
+      "target": 669.85,
+      "upside": 0.14445237830235058
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 9.9732,
@@ -75,20 +85,20 @@
       "rating": "買進",
       "target": 645.51,
       "upside": 0.16750479245155536
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 9.9732,
-      "multiple": 61.9,
-      "price": 515.21,
-      "rating": "買進",
-      "target": 617.29,
-      "upside": 0.19813150137588242
     }
   },
   "CRBG": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 4.8146,
+      "multiple": 7.35,
+      "price": 35.97,
+      "rating": "中立",
+      "target": 35.39,
+      "upside": -0.016195279425451736
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 4.9064,
@@ -97,20 +107,20 @@
       "rating": "中立",
       "target": 36.16,
       "upside": 0.0011223025834434797
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 4.9083,
-      "multiple": 7.35,
-      "price": 35.89,
-      "rating": "中立",
-      "target": 36.05,
-      "upside": 0.004492721178426029
     }
   },
   "CRNC": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 0.755,
+      "multiple": 16.72,
+      "price": 8.16,
+      "rating": "強力買進",
+      "target": 12.62,
+      "upside": 0.5470098328498734
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 0.755,
@@ -119,20 +129,20 @@
       "rating": "強力買進",
       "target": 13.08,
       "upside": 0.5030575042167205
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 0.755,
-      "multiple": 17.25,
-      "price": 8.63,
-      "rating": "強力買進",
-      "target": 13.02,
-      "upside": 0.5086876972589103
     }
   },
   "DAL": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 5.1803,
+      "multiple": 12.93,
+      "price": 86.55,
+      "rating": "降低持股",
+      "target": 66.98,
+      "upside": -0.2260943357801578
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 5.1803,
@@ -141,20 +151,20 @@
       "rating": "降低持股",
       "target": 69.23,
       "upside": -0.24184212624429025
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 5.1803,
-      "multiple": 13.45,
-      "price": 92.2,
-      "rating": "降低持股",
-      "target": 69.68,
-      "upside": -0.24430253463985208
     }
   },
   "DHR": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 8.7664,
+      "multiple": 26.8,
+      "price": 232.16,
+      "rating": "中立",
+      "target": 234.94,
+      "upside": 0.011967799336936702
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 8.7664,
@@ -163,20 +173,20 @@
       "rating": "中立",
       "target": 236.56,
       "upside": 0.005313106346426677
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 8.7664,
-      "multiple": 27.04,
-      "price": 236.11,
-      "rating": "中立",
-      "target": 237.0,
-      "upside": 0.003763254361744517
     }
   },
   "DVN": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 6.0034,
+      "multiple": 8.57,
+      "price": 46.23,
+      "rating": "中立",
+      "target": 51.45,
+      "upside": 0.11289505752634499
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 5.9296,
@@ -185,20 +195,20 @@
       "rating": "中立",
       "target": 50.05,
       "upside": 0.1133721101349161
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 5.9653,
-      "multiple": 8.28,
-      "price": 43.41,
-      "rating": "中立",
-      "target": 49.39,
-      "upside": 0.13781048084810177
     }
   },
   "FRVO": {
     "current": {
+      "date": "2026-11-13",
+      "method": null,
+      "metric_6m": null,
+      "multiple": null,
+      "price": 11.649999618530273,
+      "rating": "未評等",
+      "target": null,
+      "upside": null
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": null,
       "metric_6m": null,
@@ -207,20 +217,20 @@
       "rating": "未評等",
       "target": null,
       "upside": null
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": null,
-      "metric_6m": null,
-      "multiple": null,
-      "price": 11.380000114440918,
-      "rating": "未評等",
-      "target": null,
-      "upside": null
     }
   },
   "HON": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 8.7816,
+      "multiple": 13.1,
+      "price": 223.45,
+      "rating": "未評等",
+      "target": 115.04,
+      "upside": -0.48517145862102473
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 8.7816,
@@ -229,20 +239,20 @@
       "rating": "未評等",
       "target": 116.31,
       "upside": -0.4890539337908245
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 8.7839,
-      "multiple": 13.27,
-      "price": 228.22,
-      "rating": "未評等",
-      "target": 116.52,
-      "upside": -0.48944397455629374
     }
   },
   "IE": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PS",
+      "metric_6m": 0.0165,
+      "multiple": 319.27,
+      "price": 6.95,
+      "rating": "降低持股",
+      "target": 5.27,
+      "upside": -0.2422996717215714
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PS",
       "metric_6m": 0.0165,
@@ -251,20 +261,20 @@
       "rating": "降低持股",
       "target": 5.5,
       "upside": -0.2644324510651608
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PS",
-      "metric_6m": 0.0165,
-      "multiple": 354.63,
-      "price": 8.26,
-      "rating": "降低持股",
-      "target": 5.85,
-      "upside": -0.29184929526459724
     }
   },
   "INTC": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 1.4587,
+      "multiple": 39.61,
+      "price": 61.2,
+      "rating": "中立",
+      "target": 57.77,
+      "upside": -0.05599671683361662
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 1.4587,
@@ -273,20 +283,20 @@
       "rating": "中立",
       "target": 58.46,
       "upside": -0.06466232399999994
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 1.4587,
-      "multiple": 38.49,
-      "price": 58.13,
-      "rating": "中立",
-      "target": 56.15,
-      "upside": -0.03412150923223012
     }
   },
   "IOT": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 0.7734,
+      "multiple": 59.03,
+      "price": 41.32,
+      "rating": "中立",
+      "target": 45.66,
+      "upside": 0.1049410342981909
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 0.7734,
@@ -295,20 +305,20 @@
       "rating": "中立",
       "target": 46.67,
       "upside": 0.10486192579370135
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 0.7734,
-      "multiple": 60.33,
-      "price": 42.23,
-      "rating": "中立",
-      "target": 46.66,
-      "upside": 0.10494046189442585
     }
   },
   "KBR": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 4.0961,
+      "multiple": 8.7,
+      "price": 35.32,
+      "rating": "中立",
+      "target": 35.64,
+      "upside": 0.008948762964516632
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 4.0961,
@@ -317,20 +327,20 @@
       "rating": "中立",
       "target": 36.62,
       "upside": 0.00906952538355621
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 4.0961,
-      "multiple": 9.58,
-      "price": 38.9,
-      "rating": "中立",
-      "target": 39.24,
-      "upside": 0.008756721356282693
     }
   },
   "NVDA": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 9.3196,
+      "multiple": 23.71,
+      "price": 166.19,
+      "rating": "強力買進",
+      "target": 220.97,
+      "upside": 0.3296118115041664
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 9.3144,
@@ -339,20 +349,20 @@
       "rating": "強力買進",
       "target": 230.81,
       "upside": 0.3285606266978838
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 9.3144,
-      "multiple": 24.09,
-      "price": 168.89,
-      "rating": "強力買進",
-      "target": 224.38,
-      "upside": 0.32858012203742626
     }
   },
   "OWLS": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PS",
+      "metric_6m": 0.2303,
+      "multiple": 23.48,
+      "price": 2.26,
+      "rating": "投機",
+      "target": 5.41,
+      "upside": 1.3927262964622438
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PS",
       "metric_6m": 0.23,
@@ -361,20 +371,20 @@
       "rating": "投機",
       "target": 5.26,
       "upside": 1.390032024656512
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PS",
-      "metric_6m": 0.2297,
-      "multiple": 26.03,
-      "price": 2.51,
-      "rating": "投機",
-      "target": 5.98,
-      "upside": 1.3870526970296861
     }
   },
   "PATH": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 0.7895,
+      "multiple": 17.24,
+      "price": 13.1,
+      "rating": "中立",
+      "target": 13.61,
+      "upside": 0.0390587178343933
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 0.7895,
@@ -383,16 +393,6 @@
       "rating": "中立",
       "target": 13.65,
       "upside": 0.03890001851765468
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 0.7896,
-      "multiple": 17.08,
-      "price": 12.98,
-      "rating": "中立",
-      "target": 13.49,
-      "upside": 0.0390640736244825
     }
   },
   "SOUN": {
@@ -419,6 +419,16 @@
   },
   "TRMB": {
     "current": {
+      "date": "2026-11-13",
+      "method": "PE",
+      "metric_6m": 3.7694,
+      "multiple": 15.91,
+      "price": 55.83,
+      "rating": "中立",
+      "target": 59.97,
+      "upside": 0.07418571436695709
+    },
+    "previous": {
       "date": "2026-11-12",
       "method": "PE",
       "metric_6m": 3.7694,
@@ -427,35 +437,25 @@
       "rating": "中立",
       "target": 60.65,
       "upside": 0.07383658094127798
-    },
-    "previous": {
-      "date": "2026-11-11",
-      "method": "PE",
-      "metric_6m": 3.7694,
-      "multiple": 15.6,
-      "price": 54.75,
-      "rating": "中立",
-      "target": 58.8,
-      "upside": 0.07403221917808223
     }
   },
   "USAR": {
     "current": {
-      "date": "2026-11-12",
+      "date": "2026-11-13",
       "method": null,
       "metric_6m": null,
       "multiple": null,
-      "price": 8.265000343322754,
+      "price": 8.069999694824219,
       "rating": "未評等",
       "target": null,
       "upside": null
     },
     "previous": {
-      "date": "2026-11-11",
+      "date": "2026-11-12",
       "method": null,
       "metric_6m": null,
       "multiple": null,
-      "price": 8.760000228881836,
+      "price": 8.265000343322754,
       "rating": "未評等",
       "target": null,
       "upside": null
